@@ -1,0 +1,29 @@
+name: winatra_ai
+description: "Winatra AI — asisten belajar, asisten harian, keyboard AI, dan asisten aksesibilitas dalam satu ekosistem."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  firebase_core: ^2.31.0
+  firebase_auth: ^4.19.0
+  cloud_firestore: ^4.17.0
+  # NOTE: tambahin dependency baru satu-satu, jangan borongan.
+  # Tiap nambah, langsung test build di GitHub Actions sebelum lanjut nambah yang lain.
+  # Ini buat cegah corrupt state kayak project sebelumnya.
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  # assets akan didaftarkan di sini kalau sudah ada asset dari Gemini (logo, sprite AI Popup, dll)
+  # assets:
+  #   - assets/images/
