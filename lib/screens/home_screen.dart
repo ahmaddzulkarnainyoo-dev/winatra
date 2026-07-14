@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/core/services/streak_service.dart';
+import 'package:winatraai/screens/login_screen.dart';
 import 'package:winatraai/screens/mode_ujian_setup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -125,8 +127,14 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             tooltip: 'Logout',
-            onPressed: () {
-              debugPrint('Logout ditekan');
+            onPressed: () async {
+              await AuthService().signOut();
+              if (!context.mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (route) => false,
+              );
             },
             icon: const Icon(Icons.logout_outlined),
           ),

@@ -26,6 +26,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets akan didaftarkan di sini kalau sudah ada asset dari Gemini (logo, sprite AI Popup, dll)
-  # assets:
-  #   - assets/images/
+  assets:
+    - assets/images/

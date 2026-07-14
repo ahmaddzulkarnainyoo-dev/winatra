@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 
 class TosScreen extends StatefulWidget {
@@ -74,7 +75,10 @@ class _TosScreenState extends State<TosScreen> {
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: _isChecked
-                  ? () {
+                  ? () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('tos_agreed', true);
+                      if (!context.mounted) return;
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
