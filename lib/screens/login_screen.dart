@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/services/auth_service.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -50,11 +51,23 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+              onPressed: () async {
+                final error = await AuthService().signIn(
+                  _emailController.text,
+                  _passwordController.text,
                 );
+                if (error == null) {
+                  if (!context.mounted) return;
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  );
+                } else {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(error)),
+                  );
+                }
               },
               child: const Text('Masuk'),
             ),

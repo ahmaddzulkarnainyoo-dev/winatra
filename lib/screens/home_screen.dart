@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outlineVariant.withOpacity(0.35),
+              color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
               width: isActive ? 2.2 : 1.0,
             ),
           ),
@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.45),
+                      backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.45),
                       child: Icon(icon, size: 28, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(width: 16),
@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             tooltip: 'Logout',
             onPressed: () {
-              print('Logout ditekan');
+              debugPrint('Logout ditekan');
             },
             icon: const Icon(Icons.logout_outlined),
           ),
