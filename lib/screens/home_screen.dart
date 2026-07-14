@@ -63,10 +63,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   activeMode = mode;
                 });
-                if (mode == 'pelajar') {
+                if (mode == 'pelajar' || mode == 'daily') {
                   const channel = MethodChannel('com.winatra.ai/floating_service');
                   try {
-                    await channel.invokeMethod('startFloating', {'mode': 'pelajar'});
+                    await channel.invokeMethod('startFloating', {'mode': mode});
                   } catch (e) {
                     debugPrint('startFloating error: $e');
                   }

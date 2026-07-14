@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/services/exam_mode_service.dart';
 
 /// Screen untuk mengatur Mode Ujian — user memilih rentang tanggal
 /// selama periode ujian berlangsung.
@@ -132,12 +133,16 @@ class _ModeUjianSetupScreenState extends State<ModeUjianSetupScreen> {
 
               // Tombol Simpan
               ElevatedButton(
-                onPressed: () {
-                  debugPrint(
-                    'Rentang Mode Ujian: '
-                    '${_selectedRange!.start.toIso8601String()} — '
-                    '${_selectedRange!.end.toIso8601String()}',
+                onPressed: () async {
+                  await ExamModeService().saveExamRange(
+                    _selectedRange!.start,
+                    _selectedRange!.end,
                   );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mode Ujian disimpan')),
+                  );
+                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.secondary,

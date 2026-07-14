@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import '../core/services/auth_service.dart';
-import '../core/services/overlay_permission_service.dart';
-import 'home_screen.dart';
-import 'overlay_permission_screen.dart';
-import 'register_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -30,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Masuk')),
+      appBar: AppBar(title: const Text('Daftar')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -60,26 +56,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? null
                   : () async {
                       setState(() => _isLoading = true);
-                      final error = await AuthService().signIn(
+                      final error = await AuthService().signUp(
                         _emailController.text,
                         _passwordController.text,
                       );
                       if (mounted) setState(() => _isLoading = false);
                       if (error == null) {
                         if (!context.mounted) return;
-                        final hasPermission = await OverlayPermissionService.hasPermission();
-                        if (!context.mounted) return;
-                        if (hasPermission) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const HomeScreen()),
-                          );
-                        } else {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const OverlayPermissionScreen()),
-                          );
-                        }
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        );
                       } else {
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -93,30 +80,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Masuk'),
+                  : const Text('Daftar'),
             ),
             const SizedBox(height: 16),
             Center(
               child: Text.rich(
                 TextSpan(
-                  text: 'Belum punya akun? ',
+                  text: 'Sudah punya akun? ',
                   style: theme.textTheme.bodyMedium,
                   children: [
                     TextSpan(
-                      text: 'Daftar',
+                      text: 'Masuk',
                       style: TextStyle(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
-                          );
-                        },
                     ),
                   ],
                 ),

@@ -6,6 +6,8 @@
         android:label="winatraai"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <receiver 
+            android:name=".KenapaReceiver" android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -36,6 +38,17 @@
         <service
             android:name=".FloatingNoteService"
             android:exported="false" />
+        <service
+            android:name=".WinatraAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice.config"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
