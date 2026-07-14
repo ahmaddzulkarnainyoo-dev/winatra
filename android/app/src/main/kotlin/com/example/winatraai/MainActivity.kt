@@ -12,7 +12,6 @@ class MainActivity : FlutterActivity() {
     private val OVERLAY_CHANNEL = "com.winatra.ai/overlay"
     private val ACCESSIBILITY_CHANNEL = "com.winatra.ai/accessibility"
     private val FLOATING_CHANNEL = "com.winatra.ai/floating_service"
-    private val ACCESSIBILITY_CHANNEL = "com.winatra.ai/accessibility"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -37,28 +36,6 @@ class MainActivity : FlutterActivity() {
                             startActivity(intent)
                         }
                         result.success(null)
-                    }
-                    else -> result.notImplemented()
-                }
-            }
-
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ACCESSIBILITY_CHANNEL)
-            .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "openAccessibilitySettings" -> {
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        startActivity(intent)
-                        result.success(null)
-                    }
-                    "isAccessibilityEnabled" -> {
-                        val enabledServices = Settings.Secure.getString(
-                            contentResolver,
-                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                        ) ?: ""
-                        val isEnabled = enabledServices.contains(
-                            "$packageName/.WinatraAccessibilityService"
-                        )
-                        result.success(isEnabled)
                     }
                     else -> result.notImplemented()
                 }
