@@ -1,4 +1,4 @@
-package com.winatra.ai
+package com.example.winatraai
 
 import android.app.*
 import android.content.Intent
