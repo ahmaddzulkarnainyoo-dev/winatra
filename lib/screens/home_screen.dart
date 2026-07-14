@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:winatraai/core/services/streak_service.dart';
 import 'package:winatraai/screens/mode_ujian_setup_screen.dart';
 
@@ -58,10 +59,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () {
+              onTap: () async {
                 setState(() {
                   activeMode = mode;
                 });
+                if (mode == 'pelajar') {
+                  const channel = MethodChannel('com.winatra.ai/floating_service');
+                  try {
+                    await channel.invokeMethod('startFloating', {'mode': 'pelajar'});
+                  } catch (e) {
+                    debugPrint('startFloating error: $e');
+                  }
+                }
                 if (mode == 'ujian') {
                   Navigator.push(
                     context,

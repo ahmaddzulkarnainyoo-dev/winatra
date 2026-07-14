@@ -9,12 +9,13 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.winatra.ai/overlay"
+    private val OVERLAY_CHANNEL = "com.winatra.ai/overlay"
+    private val FLOATING_CHANNEL = "com.winatra.ai/floating_service"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, OVERLAY_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "hasOverlayPermission" -> {
@@ -25,7 +26,6 @@ class MainActivity : FlutterActivity() {
                         }
                         result.success(granted)
                     }
-
                     "requestOverlayPermission" -> {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             val intent = Intent(
@@ -33,15 +33,29 @@ class MainActivity : FlutterActivity() {
                                 Uri.parse("package:$packageName")
                             )
                             startActivity(intent)
-                        } else {
-                            // Pre-Marshmallow has overlay permission model different; treat as granted.
                         }
                         result.success(null)
                     }
+                    else -> result.notImplemented()
+                }
+            }
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FLOATING_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "startFloating" -> {
+                        val mode = call.argument<String>("mode") ?: "pelajar"
+                        val intent = Intent(this, FloatingNotesService::class.java)
+                        intent.putExtra("mode", mode)
+                        startService(intent)
+                        result.success(null)
+                    }
+                    "stopFloating" -> {
+                        stopService(Intent(this, FloatingNotesService::class.java))
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
     }
 }
-

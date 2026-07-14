@@ -10,7 +10,32 @@ class OverlayPermissionScreen extends StatefulWidget {
   State<OverlayPermissionScreen> createState() => _OverlayPermissionScreenState();
 }
 
-class _OverlayPermissionScreenState extends State<OverlayPermissionScreen> {
+class _OverlayPermissionScreenState extends State<OverlayPermissionScreen> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      final has = await OverlayPermissionService.hasPermission();
+      if (has && context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
