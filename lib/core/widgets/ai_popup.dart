@@ -1,0 +1,218 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
+
+/// AI Popup Winatra — widget kecil floating di pojok kanan bawah.
+/// Tidak butuh sprite, cukup emoji + teks yang berubah berdasarkan konteks.
+class AiPopup extends StatefulWidget {
+  const AiPopup({super.key});
+
+  @override
+  State<AiPopup> createState() => _AiPopupState();
+}
+
+class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
+  bool _isExpanded = false;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  // Ekspresi & mood
+  final _moods = const <Mood>[
+    Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal),
+    Mood('🥺', 'Lama tak jumpa... Kangen!', MoodType.rindu),
+    Mood('😰', 'Kuota tinggal sedikit!', MoodType.waspada),
+    Mood('😊', 'Streak bagus! Pertahankan!', MoodType.senang),
+    Mood('🤔', 'Butuh bantuan belajar?', MoodType.normal),
+  ];
+  Mood _currentMood = const Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal);
+  final _chatController = TextEditingController();
+  final _messages = <String>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    // Ganti mood setiap 15 detik
+    Future.delayed(const Duration(seconds: 15), _cycleMood);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _chatController.dispose();
+    super.dispose();
+  }
+
+  void _cycleMood() {
+    if (!mounted) return;
+    setState(() {
+      _currentMood = _moods[Random().nextInt(_moods.length)];
+    });
+    Future.delayed(const Duration(seconds: 15), _cycleMood);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      right: 16,
+      bottom: 16,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Chat bubble
+          if (_isExpanded) _buildChatBubble(context),
+          const SizedBox(height: 8),
+          // Avatar robot
+          GestureDetector(
+            onTap: () {
+              setState(() => _isExpanded = !_isExpanded);
+            },
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _isExpanded ? 1.0 : _pulseAnimation.value,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0A2FFF), Color(0xFF00F0FF)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00F0FF).withValues(alpha: 0.4),
+                          blurRadius: 12,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(_currentMood.emoji, style: const TextStyle(fontSize: 28)),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatBubble(BuildContext context) {
+    return Container(
+      width: 260,
+      constraints: const BoxConstraints(maxHeight: 300),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardTheme.color ?? const Color(0xFF171E4D),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00F0FF).withValues(alpha: 0.2),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header mood
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFF2D2D44), width: 1)),
+            ),
+            child: Row(
+              children: [
+                Text(_currentMood.emoji, style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _currentMood.message,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFFA9B2E3)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Messages
+          if (_messages.isNotEmpty)
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _messages.length,
+                itemBuilder: (_, i) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Text(_messages[i], style: const TextStyle(fontSize: 13, color: Colors.white)),
+                ),
+              ),
+            ),
+          // Input
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: TextField(
+                      controller: _chatController,
+                      style: const TextStyle(fontSize: 13, color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Ketik pesan...',
+                        hintStyle: const TextStyle(color: Color(0xFFA9B2E3)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Color(0xFF2D2D44)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.send, size: 18, color: Color(0xFF00F0FF)),
+                  onPressed: () {
+                    if (_chatController.text.isNotEmpty) {
+                      setState(() {
+                        _messages.add(_chatController.text);
+                        _messages.add('🤖 ' + _getAutoReply(_chatController.text));
+                        _chatController.clear();
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getAutoReply(String msg) {
+    if (msg.contains('halo') || msg.contains('hai')) return 'Halo juga! Ada yang bisa dibantu?';
+    if (msg.contains('belajar') || msg.contains('soal')) return 'Copy soalnya, tekan Jawab di floating service ya!';
+    if (msg.contains('makasih') || msg.contains('terima kasih')) return 'Sama-sama! 😊';
+    return 'Baik, saya catat. Ada lagi?';
+  }
+}
+
+enum MoodType { normal, rindu, waspada, senang }
+
+class Mood {
+  final String emoji;
+  final String message;
+  final MoodType type;
+  const Mood(this.emoji, this.message, this.type);
+}

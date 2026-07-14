@@ -1,14 +1,19 @@
 package com.example.winatraai
 
 import android.app.*
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.*
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.WindowManager
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.RemoteViews
+import android.widget.Spinner
 import androidx.core.app.NotificationCompat
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -19,9 +24,22 @@ class FloatingNotesService : Service() {
     private var floatingView: android.view.View? = null
     private var currentMode: String = "pelajar"
     private var lastFullAnswer: String = "" // cache buat tombol "Kenapa?", gak perlu API call ulang
+    private var selectedMapel: String = "Umum"
+    private var lastRequestTime: Long = 0L
+    private val minRequestInterval = 5000L // 5 detik rate-limit
 
     private val workerUrl = "https://winatraai.himlabnews.workers.dev"
     private val channelId = "winatra_answers"
+
+    private val mapelList = arrayOf(
+        "Umum", "Matematika SD", "Matematika SMP", "Matematika SMA", "Matematika Kuliah",
+        "Fisika SD", "Fisika SMP", "Fisika SMA", "Fisika Kuliah",
+        "Kimia SMA", "Kimia Kuliah",
+        "Biologi SD", "Biologi SMP", "Biologi SMA", "Biologi Kuliah",
+        "Bahasa Indonesia", "Bahasa Inggris",
+        "Sejarah", "Geografi", "Ekonomi", "Sosiologi",
+        "Agama", "PKN", "TIK", "Seni Budaya", "PJOK"
+    )
 
     override fun onCreate() {
         super.onCreate()
@@ -54,27 +72,69 @@ class FloatingNotesService : Service() {
         )
         params.gravity = Gravity.TOP or Gravity.END
         windowManager.addView(floatingView, params)
+        
+        // Setup spinner mapel
+        val spinner = floatingView?.findViewById<Spinner>(R.id.spinnerMapel)
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mapelList)
+        spinner?.adapter = adapter
+        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                selectedMapel = mapelList[pos]
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        
         updateButtonsForMode()
     }
 
     private fun updateButtonsForMode() {
         val btnPrimary = floatingView?.findViewById<Button>(R.id.btnPrimary)
         val btnSecondary = floatingView?.findViewById<Button>(R.id.btnSecondary)
+        val spinner = floatingView?.findViewById<Spinner>(R.id.spinnerMapel)
 
         if (currentMode == "pelajar") {
             btnPrimary?.text = "Jawab"
             btnSecondary?.visibility = android.view.View.GONE
+            spinner?.visibility = android.view.View.VISIBLE
             btnPrimary?.setOnClickListener { handleJawabClicked() }
         } else {
             btnPrimary?.text = "Nanya"
             btnSecondary?.text = "Ini Apa?"
             btnSecondary?.visibility = android.view.View.VISIBLE
-            // TODO: wiring Mode Daily nyusul terpisah
+            spinner?.visibility = android.view.View.GONE
+            btnPrimary?.setOnClickListener { handleNanyaClicked() }
+            btnSecondary?.setOnClickListener { handleIniApaClicked() }
         }
     }
 
+    private fun isRateLimited(): Boolean {
+        val now = System.currentTimeMillis()
+        if (now - lastRequestTime < minRequestInterval) return true
+        lastRequestTime = now
+        return false
+    }
+
+    private fun handleNanyaClicked() {
+        val prompt = getClipboardText() ?: return
+        Thread {
+            val result = callWorker("Pertanyaan: $prompt\n\nJawab dengan jelas dan informatif.")
+            showAnswerNotification(result, showKenapaButton = false)
+        }.start()
+    }
+
+    private fun handleIniApaClicked() {
+        val content = getClipboardText() ?: return
+        Thread {
+            val result = callWorker("Jelaskan konten berikut dengan singkat dan padat:\n\n$content")
+            showAnswerNotification(result, showKenapaButton = false)
+        }.start()
+    }
+
     private fun handleJawabClicked() {
-        // TODO: ambil soal dari clipboard, deteksi Pilihan Ganda vs Essay
+        if (isRateLimited()) {
+            showAnswerNotification("⏱ Harap tunggu ${minRequestInterval/1000} detik sebelum request berikutnya.", showKenapaButton = false)
+            return
+        }
         val soal = getClipboardText() ?: return
         val isPilihanGanda = soal.contains(Regex("[A-D]\\."))
 
@@ -93,8 +153,13 @@ class FloatingNotesService : Service() {
                 lastFullAnswer = if (lines.size > 1) lines[1] else ""
                 showAnswerNotification(lines[0].trim(), showKenapaButton = true)
             } else {
-                showAnswerNotification(result, showKenapaButton = false)
-                // TODO: auto-paste ke keyboard user (butuh WinatraKeyboardService, belum ada)
+                // Auto-copy essay ke clipboard biar tinggal paste di mana aja
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("jawaban_winatra", result))
+                showAnswerNotification(
+                    "✅ Sudah di-copy ke clipboard\n\n$result",
+                    showKenapaButton = false
+                )
             }
         }.start()
     }

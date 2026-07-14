@@ -155,6 +155,38 @@ class _ModeUjianSetupScreenState extends State<ModeUjianSetupScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 16),
+            // Tombol Batalkan Mode Ujian
+            OutlinedButton.icon(
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Batalkan Mode Ujian?'),
+                    content: const Text('Mode ujian akan dinonaktifkan. Lanjutkan?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Tidak')),
+                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Ya, batalkan')),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await ExamModeService().cancelExamMode();
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mode Ujian dibatalkan')),
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('Batalkan Mode Ujian'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.error,
+                side: BorderSide(color: colorScheme.error),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
           ],
         ),
       ),

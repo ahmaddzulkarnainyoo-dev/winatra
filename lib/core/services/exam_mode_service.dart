@@ -24,6 +24,39 @@ class ExamModeService {
     });
   }
 
+  /// Cek apakah user sedang dalam periode ujian aktif.
+  /// Return true jika ada rentang tanggal aktif dan belum expired.
+  /// Jika sudah expired, auto-reset dengan menghapus dokumen Firestore.
+  Future<bool> isInExamMode() async {
+    final uid = _uid;
+    if (uid == null) return false;
+    final docRef = _db.collection('users').doc(uid).collection('examMode').doc('active');
+    final doc = await docRef.get();
+    if (!doc.exists) return false;
+    final data = doc.data()!;
+    final endDate = DateTime.fromMillisecondsSinceEpoch(data['endDate']);
+    final now = DateTime.now();
+    
+    // Auto-reset: jika sudah lewat tanggal akhir, hapus data dan return false
+    if (now.isAfter(endDate)) {
+      await docRef.delete();
+      return false;
+    }
+    return true;
+  }
+
+  /// Membatalkan Mode Ujian secara manual (dari UI).
+  Future<void> cancelExamMode() async {
+    final uid = _uid;
+    if (uid == null) return;
+    await _db
+        .collection('users')
+        .doc(uid)
+        .collection('examMode')
+        .doc('active')
+        .delete();
+  }
+
   Future<Map<String, dynamic>?> getActiveExam() async {
     final uid = _uid;
     if (uid == null) return null;

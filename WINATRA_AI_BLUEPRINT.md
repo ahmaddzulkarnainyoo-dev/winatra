@@ -239,6 +239,46 @@
 
 ---
 
-## 8. Changelog Dokumen
+## 8. Status Implementasi (via Cline — 7 Juli 2026)
 
+### ✅ Sudah Diimplementasikan Penuh
+| Fitur | File Kunci | Status |
+|-------|-----------|--------|
+| Auth (login/register/signOut) | `auth_service.dart` | ✅ |
+| Device binding (1 akun = 1 HP) | `auth_service.dart` | ✅ |
+| Trial Premium 3 hari | `auth_service.dart` + `user_tier.dart` | ✅ |
+| Referral code | `register_screen.dart` + `auth_service.dart` | ✅ |
+| Streak + reward milestone (7/30/100 hari) | `streak_service.dart` | ✅ |
+| Splash screen (logo + "Tim Winatra") | `splash_screen.dart` | ✅ |
+| TOS screen (teks lengkap) | `tos_screen.dart` | ✅ |
+| Home screen (3 mode + daily briefing) | `home_screen.dart` | ✅ |
+| Overlay permission | `overlay_permission_screen.dart` | ✅ |
+| Floating service (Mode Pelajar: Jawab+Kenapa) | `FloatingNotesService.kt` | ✅ |
+| Auto-copy essay ke clipboard | `FloatingNotesService.kt` | ✅ |
+| Mode Daily (Nanya + Ini Apa?) | `FloatingNotesService.kt` | ✅ |
+| Floating notification (Mode Daily/Ujian) | `FloatingNotificationService.kt` | ✅ |
+| Exam mode (setup + auto-reset + cancel) | `exam_mode_service.dart` + `mode_ujian_setup_screen.dart` | ✅ |
+| Exam mode mute notifikasi | `notification_service.dart` | ✅ |
+| Screen reading (fondasi AI Popup) | `WinatraAccessibilityService.kt` | ✅ |
+| Keyboard custom (IME) + area jawaban | `keyboard/WinatraKeyboardService.kt` | ✅ |
+| Keyboard onboarding screen | `enable_keyboard_screen.dart` | ✅ |
+| Prompt caching (Firestore) | `prompt_cache_service.dart` | ✅ |
+| MethodChannel overlay/accessibility/floating/keyboard | `MainActivity.kt` | ✅ |
+| Firebase init + Firestore rules | `main.dart` + `firestore.rules` | ✅ |
+| Cloudflare Worker proxy | `winatra-proxy/` | ✅ |
+
+### 🔴 Belum / Butuh Aksi Manual dari Developer
+| Fitur | Blueprint | Catatan |
+|-------|-----------|---------|
+| DeepSeek API key | 3.1, 3.6 | Daftar di platform.deepseek.com, isi saldo, copy key ke Worker |
+| Logo/icon Winatra PNG | 2 | Butuh file `assets/images/logo.png` |
+| Ad network (pengganti AdMob) | 4.3 | Masih [TBD] |
+| Karakter AI Popup (sprite) | 3.3 | Butuh desain/animasi kepala robot |
+| Keyboard custom (emoji picker) | 3.2 | Bisa ditambah setelah IME dasar stabil |
+| 3x tap gesture recovery | 3.2 | Butuh logic tambahan di AccessibilityService |
+| Detail kuota Premium/Legend | 4.1 | Masih [TBD] |
+
+## 9. Changelog Dokumen
+
+- **v1.1** — Update status implementasi per 7 Juli 2026. Semua fitur low-risk sudah dikerjakan.
 - **v1.0** — Blueprint awal disusun dari sesi brainstorming pertama, mencakup branding, 4 fitur inti + Otak/Chatbot/AI Offline, sistem tier & monetisasi, gamifikasi, dan flow aplikasi dasar.

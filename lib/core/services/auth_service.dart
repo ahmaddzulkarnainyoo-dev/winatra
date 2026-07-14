@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -33,6 +34,7 @@ class AuthService {
         password: password,
       );
       await _createUserDoc(cred.user!.uid, isReferred: referredBy != null);
+      await activateTrial(cred.user!.uid);
       if (referredBy != null) {
         await _applyReferral(referredBy);
       }
@@ -97,12 +99,38 @@ class AuthService {
     });
   }
 
+  /// Cek apakah user masih dalam masa trial Premium (3 hari sejak daftar).
+  /// Jika ya, override tier-nya jadi Premium.
+  Future<bool> isTrialActive() async {
+    final uid = currentUser?.uid;
+    if (uid == null) return false;
+    final doc = await _db.collection('users').doc(uid).get();
+    if (!doc.exists) return false;
+    final trialEnd = doc.data()?['trialEndDate'] as int?;
+    if (trialEnd == null) return false;
+    return DateTime.now().millisecondsSinceEpoch < trialEnd;
+  }
+
+  /// Set trial 3 hari untuk user baru (dipanggil setelah signUp sukses).
+  Future<void> activateTrial(String uid) async {
+    final endDate = DateTime.now().add(const Duration(days: 3));
+    await _db.collection('users').doc(uid).update({
+      'trialEndDate': endDate.millisecondsSinceEpoch,
+    });
+  }
+
+  /// Cek trial & override tier di fetch user doc.
   Future<WinatraUser?> fetchCurrentUserDoc() async {
     final uid = currentUser?.uid;
     if (uid == null) return null;
     final doc = await _db.collection('users').doc(uid).get();
     if (!doc.exists) return null;
-    return WinatraUser.fromMap(uid, doc.data()!);
+    final user = WinatraUser.fromMap(uid, doc.data()!);
+    // Jika masih dalam trial, override tier jadi Premium
+    if (await isTrialActive()) {
+      user.tier = WinatraTier.premium;
+    }
+    return user;
   }
 
   Future<void> signOut() async {
@@ -126,7 +154,12 @@ class AuthService {
         return 'Password terlalu lemah, minimal 6 karakter.';
       case 'invalid-email':
         return 'Format email tidak valid.';
+      case 'operation-not-allowed':
+        return 'Metode login belum diaktifkan di server, hubungi admin.';
+      case 'network-request-failed':
+        return 'Gagal terhubung ke server, cek koneksi internet.';
       default:
+        debugPrint('AuthService error code: $code');
         return 'Terjadi kesalahan, coba lagi.';
     }
   }

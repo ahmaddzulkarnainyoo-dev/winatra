@@ -8,7 +8,7 @@ enum WinatraTier { free, premium, legend }
 /// (lihat blueprint 3.6 & 4.1).
 class WinatraUser {
   final String uid;
-  final WinatraTier tier;
+  WinatraTier tier; // non-final biar bisa di-override trial
   final String deviceId; // device-binding, 1 akun = 1 HP (4.2)
 
   final int dailyQuota; // sisa kuota harian gabungan
@@ -23,7 +23,7 @@ class WinatraUser {
   final bool hasUsedTrialPremium; // trial premium 3 hari, sekali seumur akun (4.4)
   final int referralSuccessCount; // hitung undangan yang berhasil daftar
 
-  const WinatraUser({
+  WinatraUser({
     required this.uid,
     required this.tier,
     required this.deviceId,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/overlay_permission_service.dart';
+import 'enable_keyboard_screen.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'overlay_permission_screen.dart';
@@ -27,15 +28,22 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final user = FirebaseAuth.instance.currentUser;
+    final prefs = await SharedPreferences.getInstance();
+    final keyboardShown = prefs.getBool('keyboard_onboarding_shown') ?? false;
     Widget destination;
 
     if (user == null) {
-      final prefs = await SharedPreferences.getInstance();
       final tosAgreed = prefs.getBool('tos_agreed') ?? false;
       destination = tosAgreed ? const LoginScreen() : const TosScreen();
     } else {
       final hasPermission = await OverlayPermissionService.hasPermission();
-      destination = hasPermission ? const HomeScreen() : const OverlayPermissionScreen();
+      if (!hasPermission) {
+        destination = const OverlayPermissionScreen();
+      } else if (!keyboardShown) {
+        destination = const EnableKeyboardScreen();
+      } else {
+        destination = const HomeScreen();
+      }
     }
 
     if (!mounted) return;

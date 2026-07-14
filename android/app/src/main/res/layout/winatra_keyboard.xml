@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#1A1A2E">
+
+    <!-- Answer Area (overlay) -->
+    <TextView
+        android:id="@+id/tv_answer_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:textColor="#00F5FF"
+        android:textSize="14sp"
+        android:background="#16213E"
+        android:visibility="gone"
+        android:maxLines="5"
+        android:scrollbars="vertical" />
+
+    <!-- Row 1: QWERTYUIOP -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingHorizontal="4dp"
+        android:layout_marginTop="4dp">
+
+        <TextView android:id="@+id/key_q" style="@style/WinatraKey" android:text="q" />
+        <TextView android:id="@+id/key_w" style="@style/WinatraKey" android:text="w" />
+        <TextView android:id="@+id/key_e" style="@style/WinatraKey" android:text="e" />
+        <TextView android:id="@+id/key_r" style="@style/WinatraKey" android:text="r" />
+        <TextView android:id="@+id/key_t" style="@style/WinatraKey" android:text="t" />
+        <TextView android:id="@+id/key_y" style="@style/WinatraKey" android:text="y" />
+        <TextView android:id="@+id/key_u" style="@style/WinatraKey" android:text="u" />
+        <TextView android:id="@+id/key_i" style="@style/WinatraKey" android:text="i" />
+        <TextView android:id="@+id/key_o" style="@style/WinatraKey" android:text="o" />
+        <TextView android:id="@+id/key_p" style="@style/WinatraKey" android:text="p" />
+    </LinearLayout>
+
+    <!-- Row 2: ASDFGHJKL -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingHorizontal="4dp"
+        android:layout_marginTop="4dp">
+
+        <TextView android:id="@+id/key_a" style="@style/WinatraKey" android:text="a" />
+        <TextView android:id="@+id/key_s" style="@style/WinatraKey" android:text="s" />
+        <TextView android:id="@+id/key_d" style="@style/WinatraKey" android:text="d" />
+        <TextView android:id="@+id/key_f" style="@style/WinatraKey" android:text="f" />
+        <TextView android:id="@+id/key_g" style="@style/WinatraKey" android:text="g" />
+        <TextView android:id="@+id/key_h" style="@style/WinatraKey" android:text="h" />
+        <TextView android:id="@+id/key_j" style="@style/WinatraKey" android:text="j" />
+        <TextView android:id="@+id/key_k" style="@style/WinatraKey" android:text="k" />
+        <TextView android:id="@+id/key_l" style="@style/WinatraKey" android:text="l" />
+    </LinearLayout>
+
+    <!-- Row 3: ZXCVBNM + Delete -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingHorizontal="4dp"
+        android:layout_marginTop="4dp">
+
+        <TextView android:id="@+id/key_z" style="@style/WinatraKey" android:text="z" />
+        <TextView android:id="@+id/key_x" style="@style/WinatraKey" android:text="x" />
+        <TextView android:id="@+id/key_c" style="@style/WinatraKey" android:text="c" />
+        <TextView android:id="@+id/key_v" style="@style/WinatraKey" android:text="v" />
+        <TextView android:id="@+id/key_b" style="@style/WinatraKey" android:text="b" />
+        <TextView android:id="@+id/key_n" style="@style/WinatraKey" android:text="n" />
+        <TextView android:id="@+id/key_m" style="@style/WinatraKey" android:text="m" />
+        <TextView android:id="@+id/key_delete" style="@style/WinatraKeyAction" android:text="⌫" />
+    </LinearLayout>
+
+    <!-- Row 4: Shift + Symbol + Space + Enter + Winatra -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingHorizontal="4dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp">
+
+        <TextView android:id="@+id/key_shift" style="@style/WinatraKeyAction" android:text="⇧" android:alpha="0.5" />
+        <TextView android:id="@+id/key_symbol" style="@style/WinatraKeyAction" android:text="?123" android:textSize="11sp" />
+        <TextView android:id="@+id/key_space" style="@style/WinatraKeySpace" android:text="Spasi" />
+        <TextView android:id="@+id/key_emoji" style="@style/WinatraKeyAction" android:text="😊" />
+        <TextView android:id="@+id/key_history" style="@style/WinatraKeyAction" android:text="📋" />
+        <TextView android:id="@+id/key_winatra" style="@style/WinatraKeyWinatra" android:text="W" />
+        <TextView android:id="@+id/key_enter" style="@style/WinatraKeyAction" android:text="↵" />
+    </LinearLayout>
+
+</LinearLayout>

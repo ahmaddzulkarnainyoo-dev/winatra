@@ -12,12 +12,14 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _referralController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _referralController.dispose();
     super.dispose();
   }
 
@@ -50,19 +52,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 prefixIcon: Icon(Icons.lock_outlined),
               ),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _referralController,
+              decoration: const InputDecoration(
+                labelText: 'Kode Referral (opsional)',
+                prefixIcon: Icon(Icons.person_add_outlined),
+              ),
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading
                   ? null
                   : () async {
                       setState(() => _isLoading = true);
+                      final ref = _referralController.text.trim();
                       final error = await AuthService().signUp(
                         _emailController.text,
                         _passwordController.text,
+                        referredBy: ref.isEmpty ? null : ref,
                       );
                       if (mounted) setState(() => _isLoading = false);
                       if (error == null) {
                         if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Daftar berhasil, silakan masuk')),
+                        );
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (_) => const LoginScreen()),

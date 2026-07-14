@@ -12,6 +12,7 @@ class MainActivity : FlutterActivity() {
     private val OVERLAY_CHANNEL = "com.winatra.ai/overlay"
     private val ACCESSIBILITY_CHANNEL = "com.winatra.ai/accessibility"
     private val FLOATING_CHANNEL = "com.winatra.ai/floating_service"
+    private val KEYBOARD_CHANNEL = "com.winatra.ai/keyboard"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -67,6 +68,16 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startFloating" -> {
+                        val mode = call.argument<String>("mode") ?: "daily"
+                        val prompt = call.argument<String>("prompt") ?: ""
+                        val intent = Intent(this, FloatingNotificationService::class.java).apply {
+                            putExtra("mode", mode)
+                            putExtra("prompt", prompt)
+                        }
+                        startService(intent)
+                        result.success(null)
+                    }
+                    "startFloatingNotes" -> {
                         val mode = call.argument<String>("mode") ?: "pelajar"
                         val intent = Intent(this, FloatingNotesService::class.java)
                         intent.putExtra("mode", mode)
@@ -75,6 +86,18 @@ class MainActivity : FlutterActivity() {
                     }
                     "stopFloating" -> {
                         stopService(Intent(this, FloatingNotesService::class.java))
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, KEYBOARD_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "openKeyboardSettings" -> {
+                        val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
+                        startActivity(intent)
                         result.success(null)
                     }
                     else -> result.notImplemented()

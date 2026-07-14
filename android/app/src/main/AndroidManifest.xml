@@ -39,6 +39,20 @@
             android:name=".FloatingNoteService"
             android:exported="false" />
         <service
+            android:name=".keyboard.WinatraKeyboardService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/winatra_keyboard_ime" />
+        </service>
+        <service
+            android:name=".FloatingNotificationService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
             android:name=".WinatraAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="false">

@@ -37,7 +37,7 @@ class AppColors {
   /// Glow shadow buat elemen yang butuh kesan "AI aktif" (contoh: AI Popup, tombol Jawab).
   static List<BoxShadow> neonGlow({Color color = neonCyan, double blur = 20}) {
     return [
-      BoxShadow(color: color.withOpacity(0.55), blurRadius: blur, spreadRadius: 1),
+      BoxShadow(color: color.withValues(alpha: 0.55), blurRadius: blur, spreadRadius: 1),
     ];
   }
 }

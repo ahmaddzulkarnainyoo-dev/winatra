@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/core/services/streak_service.dart';
+import 'package:winatraai/core/widgets/ai_popup.dart';
 import 'package:winatraai/screens/login_screen.dart';
 import 'package:winatraai/screens/mode_ujian_setup_screen.dart';
 
@@ -19,14 +21,75 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    StreakService().recordActivity().then((_) {
-      StreakService().getCurrentStreak().then((value) {
+    _loadStreak();
+    _showDailyBriefing();
+  }
+
+  Future<void> _loadStreak() async {
+    final bonus = await StreakService().recordActivity();
+    final value = await StreakService().getCurrentStreak();
+    if (!mounted) return;
+    setState(() {
+      streak = value;
+    });
+    if (bonus > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          setState(() {
-            streak = value;
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🔥 Streak $value hari! Bonus +$bonus kuota!'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
       });
+    }
+  }
+
+  /// Daily Briefing — tampilkan ringkasan saat pertama buka app hari ini.
+  Future<void> _showDailyBriefing() async {
+    final prefs = await SharedPreferences.getInstance();
+    final today = DateTime.now();
+    final todayKey = 'briefing_date_${today.year}_${today.month}_${today.day}';
+    final alreadyShown = prefs.getBool(todayKey) ?? false;
+    if (alreadyShown) return;
+
+    await prefs.setBool(todayKey, true);
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.wb_sunny_outlined, color: Colors.amber),
+              const SizedBox(width: 8),
+              Text('Selamat pagi!', style: Theme.of(ctx).textTheme.titleLarge),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('🔥 Streak: $streak hari'),
+              const SizedBox(height: 8),
+              const Text('📌 Pilih mode di bawah untuk mulai:'),
+              const SizedBox(height: 4),
+              const Text('• Mode Pelajar — bantu jawab soal'),
+              const Text('• Mode Daily — bantu aktivitas harian'),
+              const Text('• Mode Ujian — fokus persiapan ujian'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Mulai'),
+            ),
+          ],
+        ),
+      );
     });
   }
 
@@ -66,16 +129,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   activeMode = mode;
                 });
                 if (mode == 'pelajar' || mode == 'daily') {
+                  final scaffold = ScaffoldMessenger.of(context);
                   const channel = MethodChannel('com.winatra.ai/floating_service');
+                  final modeLabel = mode == 'pelajar' ? 'Pelajar' : 'Daily';
                   try {
                     await channel.invokeMethod('startFloating', {'mode': mode});
+                    if (!mounted) return;
+                    scaffold.showSnackBar(
+                      SnackBar(
+                        content: Text('Mode $modeLabel aktif!'),
+                      ),
+                    );
                   } catch (e) {
                     debugPrint('startFloating error: $e');
+                    if (!mounted) return;
+                    scaffold.showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                      ),
+                    );
                   }
                 }
                 if (mode == 'ujian') {
-                  Navigator.push(
-                    context,
+                  if (!mounted) return;
+                  final navigator = Navigator.of(context);
+                  navigator.push(
                     MaterialPageRoute(
                       builder: (_) => const ModeUjianSetupScreen(),
                     ),
@@ -140,44 +218,50 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Pilih mode',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pilih mode',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      buildModeCard(
+                        mode: 'pelajar',
+                        title: 'Mode Pelajar',
+                        description: 'Fokus belajar dengan bantuan cepat.',
+                        icon: Icons.school_outlined,
+                      ),
+                      buildModeCard(
+                        mode: 'daily',
+                        title: 'Mode Daily',
+                        description: 'Bantu aktivitas harian sehari-hari.',
+                        icon: Icons.calendar_today_outlined,
+                      ),
+                      buildModeCard(
+                        mode: 'ujian',
+                        title: 'Mode Ujian',
+                        description: 'Siapkan diri untuk ujian dengan ringkas.',
+                        icon: Icons.quiz_outlined,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView(
-                children: [
-                  buildModeCard(
-                    mode: 'pelajar',
-                    title: 'Mode Pelajar',
-                    description: 'Fokus belajar dengan bantuan cepat.',
-                    icon: Icons.school_outlined,
-                  ),
-                  buildModeCard(
-                    mode: 'daily',
-                    title: 'Mode Daily',
-                    description: 'Bantu aktivitas harian sehari-hari.',
-                    icon: Icons.calendar_today_outlined,
-                  ),
-                  buildModeCard(
-                    mode: 'ujian',
-                    title: 'Mode Ujian',
-                    description: 'Siapkan diri untuk ujian dengan ringkas.',
-                    icon: Icons.quiz_outlined,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+          // AI Popup floating di pojok kanan bawah
+          const AiPopup(),
+        ],
       ),
     );
   }
