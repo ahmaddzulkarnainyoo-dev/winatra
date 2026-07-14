@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/services/auth_service.dart';
+import '../core/services/overlay_permission_service.dart';
 import 'home_screen.dart';
+import 'overlay_permission_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -58,10 +60,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
                 if (error == null) {
                   if (!context.mounted) return;
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  );
+                  final hasPermission = await OverlayPermissionService.hasPermission();
+                  if (!context.mounted) return;
+                  if (hasPermission) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const OverlayPermissionScreen()),
+                    );
+                  }
                 } else {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
