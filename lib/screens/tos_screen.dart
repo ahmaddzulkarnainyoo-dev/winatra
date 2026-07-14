@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_screen.dart';
 
 class TosScreen extends StatefulWidget {
   const TosScreen({super.key});
@@ -74,7 +75,10 @@ class _TosScreenState extends State<TosScreen> {
             ElevatedButton(
               onPressed: _isChecked
                   ? () {
-                      print('Lanjut ditekan');
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
                     }
                   : null,
               child: const Text('Lanjut'),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
+import 'screens/tos_screen.dart';
 
 // NOTE UNTUK CLINE/DEEPSEEK:
 // - Jangan ubah AppTheme/AppColors, itu fondasi visual yang sudah fix.
@@ -29,8 +30,25 @@ class WinatraApp extends StatelessWidget {
 
 /// Splash screen: logo berkilau + "Dikembangkan oleh Tim Winatra" (blueprint 6.1).
 /// SHELL — animasi glow & transisi ke ToS/Login boleh digarap Cline/DeepSeek.
-class SplashScreen extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const TosScreen()),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,4 @@
-name: winatra_ai
+name: winatraai
 description: "Winatra AI — asisten belajar, asisten harian, keyboard AI, dan asisten aksesibilitas dalam satu ekosistem."
 publish_to: 'none'
 version: 1.0.0+1
@@ -13,7 +13,9 @@ dependencies:
   firebase_core: ^2.31.0
   firebase_auth: ^4.19.0
   cloud_firestore: ^4.17.0
+  shared_preferences: ^2.3.2
   # NOTE: tambahin dependency baru satu-satu, jangan borongan.
+
   # Tiap nambah, langsung test build di GitHub Actions sebelum lanjut nambah yang lain.
   # Ini buat cegah corrupt state kayak project sebelumnya.
 
