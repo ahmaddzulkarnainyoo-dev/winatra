@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "196121146264",
+    "project_id": "winatra",
+    "storage_bucket": "winatra.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:196121146264:android:ecfeef6458edd7cb29f1ed",
+        "android_client_info": {
+          "package_name": "com.example.winatraai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6fKCsrodqGyKbU9Mej-U08nyFeDxqdE8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
