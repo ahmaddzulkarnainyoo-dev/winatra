@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:winatraai/core/services/accessibility_permission_service.dart';
 import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/core/services/streak_service.dart';
 import 'package:winatraai/core/widgets/ai_popup.dart';
@@ -203,6 +204,13 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('Winatra${streak > 0 ? '  🔥 $streak hari' : ''}'),
         actions: [
+          IconButton(
+            tooltip: 'Accessibility Settings',
+            onPressed: () async {
+              await AccessibilityPermissionService.openAccessibilitySettings();
+            },
+            icon: const Icon(Icons.accessibility_outlined),
+          ),
           IconButton(
             tooltip: 'Logout',
             onPressed: () async {
