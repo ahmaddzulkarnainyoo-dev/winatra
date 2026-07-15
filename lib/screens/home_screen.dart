@@ -5,6 +5,7 @@ import 'package:winatraai/core/services/accessibility_permission_service.dart';
 import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/core/services/streak_service.dart';
 import 'package:winatraai/core/widgets/ai_popup.dart';
+import 'package:winatraai/screens/account_screen.dart';
 import 'package:winatraai/screens/login_screen.dart';
 import 'package:winatraai/screens/mode_ujian_setup_screen.dart';
 
@@ -134,7 +135,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     const channel = MethodChannel('com.winatra.ai/floating_service');
                     final modeLabel = mode == 'pelajar' ? 'Pelajar' : 'Daily';
                     try {
-                      await channel.invokeMethod('startFloating', {'mode': mode});
+                      if (mode == 'pelajar') {
+                        await channel.invokeMethod('startFloatingNotes', {'mode': mode});
+                      } else {
+                        await channel.invokeMethod('startFloating', {'mode': mode, 'prompt': ''});
+                      }
                       if (!mounted) return;
                       scaffold.showSnackBar(
                         SnackBar(
@@ -230,6 +235,16 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('Winatra${streak > 0 ? '  🔥 $streak hari' : ''}'),
         actions: [
+          IconButton(
+            tooltip: 'Akun Saya',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountScreen()),
+              );
+            },
+            icon: const Icon(Icons.person_outline),
+          ),
           IconButton(
             tooltip: 'Accessibility Settings',
             onPressed: () async {
