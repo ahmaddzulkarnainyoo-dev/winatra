@@ -89,7 +89,7 @@
         android:layout_marginBottom="4dp">
 
         <TextView android:id="@+id/key_shift" style="@style/WinatraKeyAction" android:text="⇧" android:alpha="0.5" />
-        <TextView android:id="@+id/key_symbol" style="@style/WinatraKeyAction" android:text="?123" android:textSize="11sp" />
+        <TextView android:id="@+id/key_symbol" style="@style/WinatraKeyAction" android:text="@string/key_symbol_label" android:textSize="11sp" />
         <TextView android:id="@+id/key_space" style="@style/WinatraKeySpace" android:text="Spasi" />
         <TextView android:id="@+id/key_emoji" style="@style/WinatraKeyAction" android:text="😊" />
         <TextView android:id="@+id/key_history" style="@style/WinatraKeyAction" android:text="📋" />
