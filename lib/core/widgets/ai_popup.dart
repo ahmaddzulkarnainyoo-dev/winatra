@@ -17,13 +17,13 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
 
   // Ekspresi & mood
   final _moods = const <Mood>[
-    Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal),
-    Mood('🥺', 'Lama tak jumpa... Kangen!', MoodType.rindu),
-    Mood('😰', 'Kuota tinggal sedikit!', MoodType.waspada),
-    Mood('😊', 'Streak bagus! Pertahankan!', MoodType.senang),
-    Mood('🤔', 'Butuh bantuan belajar?', MoodType.normal),
+    Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal, 'assets/images/robot/robot_idle.png'),
+    Mood('🥺', 'Lama tak jumpa... Kangen!', MoodType.rindu, 'assets/images/robot/robot_idle.png'),
+    Mood('😰', 'Kuota tinggal sedikit!', MoodType.waspada, 'assets/images/robot/robot_alert.png'),
+    Mood('😊', 'Streak bagus! Pertahankan!', MoodType.senang, 'assets/images/robot/robot_happy.png'),
+    Mood('🤔', 'Butuh bantuan belajar?', MoodType.normal, 'assets/images/robot/robot_thinking.png'),
   ];
-  Mood _currentMood = const Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal);
+  Mood _currentMood = const Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal, 'assets/images/robot/robot_idle.png');
   final _chatController = TextEditingController();
   final _messages = <String>[];
 
@@ -96,7 +96,14 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
                       ],
                     ),
                     child: Center(
-                      child: Text(_currentMood.emoji, style: const TextStyle(fontSize: 28)),
+                      child: Image.asset(
+                        _currentMood.assetPath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Text(
+                          _currentMood.emoji,
+                          style: TextStyle(fontSize: 28),
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -132,8 +139,16 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
               border: Border(bottom: BorderSide(color: Color(0xFF2D2D44), width: 1)),
             ),
             child: Row(
-              children: [
-                Text(_currentMood.emoji, style: const TextStyle(fontSize: 20)),
+                children: [
+                Image.asset(
+                  _currentMood.assetPath,
+                  width: 24,
+                  height: 24,
+                  errorBuilder: (context, error, stackTrace) => Text(
+                    _currentMood.emoji,
+                    style: TextStyle(fontSize: 20),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -214,5 +229,6 @@ class Mood {
   final String emoji;
   final String message;
   final MoodType type;
-  const Mood(this.emoji, this.message, this.type);
+  final String assetPath;
+  const Mood(this.emoji, this.message, this.type, this.assetPath);
 }
