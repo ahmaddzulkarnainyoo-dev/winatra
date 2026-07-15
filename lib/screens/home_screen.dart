@@ -129,28 +129,54 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   activeMode = mode;
                 });
-                if (mode == 'pelajar' || mode == 'daily') {
-                  final scaffold = ScaffoldMessenger.of(context);
-                  const channel = MethodChannel('com.winatra.ai/floating_service');
-                  final modeLabel = mode == 'pelajar' ? 'Pelajar' : 'Daily';
-                  try {
-                    await channel.invokeMethod('startFloating', {'mode': mode});
-                    if (!mounted) return;
-                    scaffold.showSnackBar(
-                      SnackBar(
-                        content: Text('Mode $modeLabel aktif!'),
-                      ),
-                    );
-                  } catch (e) {
-                    debugPrint('startFloating error: $e');
-                    if (!mounted) return;
-                    scaffold.showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                      ),
-                    );
+                  if (mode == 'pelajar' || mode == 'daily') {
+                    final scaffold = ScaffoldMessenger.of(context);
+                    const channel = MethodChannel('com.winatra.ai/floating_service');
+                    final modeLabel = mode == 'pelajar' ? 'Pelajar' : 'Daily';
+                    try {
+                      await channel.invokeMethod('startFloating', {'mode': mode});
+                      if (!mounted) return;
+                      scaffold.showSnackBar(
+                        SnackBar(
+                          content: Text('Mode $modeLabel aktif!'),
+                        ),
+                      );
+                    } on PlatformException catch (e) {
+                      if (e.code == 'NO_PERMISSION') {
+                        debugPrint('startFloating: overlay permission not granted');
+                        if (!mounted) return;
+                        scaffold.showSnackBar(
+                          SnackBar(
+                            content: const Text('Aktifkan izin overlay dulu di menu Home'),
+                            duration: const Duration(seconds: 4),
+                            action: SnackBarAction(
+                              label: 'Buka Pengaturan',
+                              onPressed: () async {
+                                const overlayChannel = MethodChannel('com.winatra.ai/overlay');
+                                await overlayChannel.invokeMethod('requestOverlayPermission');
+                              },
+                            ),
+                          ),
+                        );
+                      } else {
+                        debugPrint('startFloating PlatformException: $e');
+                        if (!mounted) return;
+                        scaffold.showSnackBar(
+                          SnackBar(
+                            content: Text('Error: ${e.message}'),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('startFloating error: $e');
+                      if (!mounted) return;
+                      scaffold.showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                        ),
+                      );
+                    }
                   }
-                }
                 if (mode == 'ujian') {
                   if (!mounted) return;
                   final navigator = Navigator.of(context);

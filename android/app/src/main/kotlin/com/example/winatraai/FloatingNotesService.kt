@@ -45,7 +45,12 @@ class FloatingNotesService : Service() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
-        showFloatingWidget()
+        try {
+            showFloatingWidget()
+        } catch (e: Exception) {
+            android.util.Log.e("FloatingNotesService", "Gagal show floating widget", e)
+            stopSelf()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -62,29 +67,37 @@ class FloatingNotesService : Service() {
     }
 
     private fun showFloatingWidget() {
-        floatingView = LayoutInflater.from(this).inflate(R.layout.floating_note, null)
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        )
-        params.gravity = Gravity.TOP or Gravity.END
-        windowManager.addView(floatingView, params)
-        
-        // Setup spinner mapel
-        val spinner = floatingView?.findViewById<Spinner>(R.id.spinnerMapel)
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mapelList)
-        spinner?.adapter = adapter
-        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
-                selectedMapel = mapelList[pos]
+        try {
+            floatingView = LayoutInflater.from(this).inflate(R.layout.floating_note, null)
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                PixelFormat.TRANSLUCENT
+            )
+            params.gravity = Gravity.TOP or Gravity.END
+            windowManager.addView(floatingView, params)
+            
+            // Setup spinner mapel
+            val spinner = floatingView?.findViewById<Spinner>(R.id.spinnerMapel)
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mapelList)
+            spinner?.adapter = adapter
+            spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                    selectedMapel = mapelList[pos]
+                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            
+            updateButtonsForMode()
+        } catch (e: SecurityException) {
+            android.util.Log.e("FloatingNotesService", "SecurityException: overlay permission tidak aktif", e)
+            stopSelf()
+        } catch (e: Exception) {
+            android.util.Log.e("FloatingNotesService", "Gagal menampilkan floating widget", e)
+            stopSelf()
         }
-        
-        updateButtonsForMode()
     }
 
     private fun updateButtonsForMode() {

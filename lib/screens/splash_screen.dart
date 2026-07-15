@@ -64,9 +64,12 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             Image.asset('assets/images/logo.png', width: 200, height: 200),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Dikembangkan oleh Tim Winatra',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 14,
+              ),
             ),
           ],
         ),

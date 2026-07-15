@@ -68,6 +68,10 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startFloating" -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                            result.error("NO_PERMISSION", "Overlay permission belum aktif", null)
+                            return@setMethodCallHandler
+                        }
                         val mode = call.argument<String>("mode") ?: "daily"
                         val prompt = call.argument<String>("prompt") ?: ""
                         val intent = Intent(this, FloatingNotificationService::class.java).apply {
@@ -78,6 +82,10 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     }
                     "startFloatingNotes" -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                            result.error("NO_PERMISSION", "Overlay permission belum aktif", null)
+                            return@setMethodCallHandler
+                        }
                         val mode = call.argument<String>("mode") ?: "pelajar"
                         val intent = Intent(this, FloatingNotesService::class.java)
                         intent.putExtra("mode", mode)
