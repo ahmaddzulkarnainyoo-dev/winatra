@@ -87,8 +87,10 @@ class MainActivity : FlutterActivity() {
                             return@setMethodCallHandler
                         }
                         val mode = call.argument<String>("mode") ?: "pelajar"
+                        val floatingMode = call.argument<Boolean>("floatingMode") ?: true
                         val intent = Intent(this, FloatingNotesService::class.java)
                         intent.putExtra("mode", mode)
+                        intent.putExtra("floatingMode", floatingMode)
                         startService(intent)
                         result.success(null)
                     }

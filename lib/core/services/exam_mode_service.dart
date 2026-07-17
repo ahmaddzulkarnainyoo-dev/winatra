@@ -1,45 +1,28 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Simpan & baca pengaturan Mode Ujian per-user.
-/// Disimpan di subcollection users/{uid}/examMode/active biar terpisah 
-/// dari dokumen tier utama (yang sering ditulis/dibaca, jangan dicampur).
+/// Disimpan di SharedPreferences biar ringan, tidak perlu Firestore.
 class ExamModeService {
-  final _db = FirebaseFirestore.instance;
-
-  String? get _uid => FirebaseAuth.instance.currentUser?.uid;
-
   Future<void> saveExamRange(DateTime start, DateTime end) async {
-    final uid = _uid;
-    if (uid == null) return;
-    await _db
-        .collection('users')
-        .doc(uid)
-        .collection('examMode')
-        .doc('active')
-        .set({
-      'startDate': start.millisecondsSinceEpoch,
-      'endDate': end.millisecondsSinceEpoch,
-      'isActive': true,
-    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('exam_start', start.millisecondsSinceEpoch);
+    await prefs.setInt('exam_end', end.millisecondsSinceEpoch);
   }
 
   /// Cek apakah user sedang dalam periode ujian aktif.
   /// Return true jika ada rentang tanggal aktif dan belum expired.
-  /// Jika sudah expired, auto-reset dengan menghapus dokumen Firestore.
+  /// Jika sudah expired, auto-reset dengan menghapus data.
   Future<bool> isInExamMode() async {
-    final uid = _uid;
-    if (uid == null) return false;
-    final docRef = _db.collection('users').doc(uid).collection('examMode').doc('active');
-    final doc = await docRef.get();
-    if (!doc.exists) return false;
-    final data = doc.data()!;
-    final endDate = DateTime.fromMillisecondsSinceEpoch(data['endDate']);
+    final prefs = await SharedPreferences.getInstance();
+    final endMs = prefs.getInt('exam_end');
+    if (endMs == null) return false;
+    final endDate = DateTime.fromMillisecondsSinceEpoch(endMs);
     final now = DateTime.now();
-    
+
     // Auto-reset: jika sudah lewat tanggal akhir, hapus data dan return false
     if (now.isAfter(endDate)) {
-      await docRef.delete();
+      await prefs.remove('exam_start');
+      await prefs.remove('exam_end');
       return false;
     }
     return true;
@@ -47,29 +30,20 @@ class ExamModeService {
 
   /// Membatalkan Mode Ujian secara manual (dari UI).
   Future<void> cancelExamMode() async {
-    final uid = _uid;
-    if (uid == null) return;
-    await _db
-        .collection('users')
-        .doc(uid)
-        .collection('examMode')
-        .doc('active')
-        .delete();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('exam_start');
+    await prefs.remove('exam_end');
   }
 
   Future<Map<String, dynamic>?> getActiveExam() async {
-    final uid = _uid;
-    if (uid == null) return null;
-    final doc = await _db
-        .collection('users')
-        .doc(uid)
-        .collection('examMode')
-        .doc('active')
-        .get();
-    if (!doc.exists) return null;
-    final data = doc.data()!;
-    final endDate = DateTime.fromMillisecondsSinceEpoch(data['endDate']);
+    final prefs = await SharedPreferences.getInstance();
+    final endMs = prefs.getInt('exam_end');
+    if (endMs == null) return null;
+    final endDate = DateTime.fromMillisecondsSinceEpoch(endMs);
     if (DateTime.now().isAfter(endDate)) return null; // sudah lewat, dianggap tidak aktif
-    return data;
+    return {
+      'startDate': prefs.getInt('exam_start'),
+      'endDate': endMs,
+    };
   }
 }

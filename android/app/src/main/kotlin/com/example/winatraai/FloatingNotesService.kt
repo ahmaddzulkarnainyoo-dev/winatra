@@ -1,8 +1,10 @@
 package com.example.winatraai
 
 import android.app.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.*
@@ -12,8 +14,10 @@ import android.view.WindowManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.RemoteViews
 import android.widget.Spinner
+import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -23,6 +27,7 @@ class FloatingNotesService : Service() {
     private lateinit var windowManager: WindowManager
     private var floatingView: android.view.View? = null
     private var currentMode: String = "pelajar"
+    private var floatingMode: Boolean = true
     private var lastFullAnswer: String = "" // cache buat tombol "Kenapa?", gak perlu API call ulang
     private var selectedMapel: String = "Umum"
     private var lastRequestTime: Long = 0L
@@ -30,6 +35,7 @@ class FloatingNotesService : Service() {
 
     private val workerUrl = "https://winatraai.himlabnews.workers.dev"
     private val channelId = "winatra_answers"
+    private val persistentChannelId = "winatra_persistent"
 
     private val mapelList = arrayOf(
         "Umum", "Matematika SD", "Matematika SMP", "Matematika SMA", "Matematika Kuliah",
@@ -41,21 +47,49 @@ class FloatingNotesService : Service() {
         "Agama", "PKN", "TIK", "Seni Budaya", "PJOK"
     )
 
+    private var jawabReceiverRegistered = false
+    private val jawabReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == "com.winatraai.JAWAB_ACTION") {
+                handleJawabClicked()
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
-        try {
-            showFloatingWidget()
-        } catch (e: Exception) {
-            android.util.Log.e("FloatingNotesService", "Gagal show floating widget", e)
-            stopSelf()
-        }
+        createPersistentChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         currentMode = intent?.getStringExtra("mode") ?: currentMode
-        updateButtonsForMode()
+        floatingMode = intent?.getBooleanExtra("floatingMode", true) ?: true
+
+        if (floatingMode) {
+            // Mode floating: tampilkan bubble overlay
+            if (floatingView == null) {
+                try {
+                    showFloatingWidget()
+                } catch (e: Exception) {
+                    android.util.Log.e("FloatingNotesService", "Gagal show floating widget", e)
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+            }
+            updateButtonsForMode()
+            // Hentikan persistent notification jika sebelumnya non-floating
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            unregisterJawabReceiver()
+        } else {
+            // Mode non-floating: tampilkan persistent notification dengan tombol Jawab
+            floatingView?.let { windowManager.removeView(it) }
+            floatingView = null
+            showPersistentNotification()
+            registerJawabReceiver()
+        }
+
         return START_STICKY
     }
 
@@ -64,6 +98,51 @@ class FloatingNotesService : Service() {
             channelId, "Jawaban Winatra", NotificationManager.IMPORTANCE_HIGH
         )
         (getSystemService(NotificationManager::class.java)).createNotificationChannel(channel)
+    }
+
+    private fun createPersistentChannel() {
+        val channel = NotificationChannel(
+            persistentChannelId, "Winatra", NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            setShowBadge(false)
+        }
+        (getSystemService(NotificationManager::class.java)).createNotificationChannel(channel)
+    }
+
+    private fun registerJawabReceiver() {
+        if (!jawabReceiverRegistered) {
+            registerReceiver(jawabReceiver, IntentFilter("com.winatraai.JAWAB_ACTION"), RECEIVER_NOT_EXPORTED)
+            jawabReceiverRegistered = true
+        }
+    }
+
+    private fun unregisterJawabReceiver() {
+        if (jawabReceiverRegistered) {
+            try {
+                unregisterReceiver(jawabReceiver)
+            } catch (_: Exception) {}
+            jawabReceiverRegistered = false
+        }
+    }
+
+    private fun showPersistentNotification() {
+        // Intent untuk tombol Jawab — broadcast ke receiver
+        val jawabIntent = Intent("com.winatraai.JAWAB_ACTION")
+        val jawabPendingIntent = PendingIntent.getBroadcast(
+            this, 1, jawabIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, persistentChannelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Winatra — Mode Pelajar")
+            .setContentText("Tekan Jawab untuk menjawab soal dari clipboard")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_edit, "Jawab", jawabPendingIntent)
+            .build()
+
+        startForeground(1001, notification)
     }
 
     private fun showFloatingWidget() {
@@ -90,6 +169,12 @@ class FloatingNotesService : Service() {
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
             
+            val closeButton = floatingView?.findViewById<ImageButton>(R.id.btnClose)
+            closeButton?.setOnClickListener {
+                floatingView?.let { windowManager.removeView(it) }
+                stopSelf()
+            }
+
             updateButtonsForMode()
         } catch (e: SecurityException) {
             android.util.Log.e("FloatingNotesService", "SecurityException: overlay permission tidak aktif", e)
@@ -162,6 +247,9 @@ class FloatingNotesService : Service() {
             val result = callWorker(prompt)
             val lines = result.split("\n", limit = 2)
 
+            // Tampilkan indikator tipe soal di floating widget
+            updateSoalType(isPilihanGanda)
+
             if (isPilihanGanda) {
                 lastFullAnswer = if (lines.size > 1) lines[1] else ""
                 showAnswerNotification(lines[0].trim(), showKenapaButton = true)
@@ -175,6 +263,14 @@ class FloatingNotesService : Service() {
                 )
             }
         }.start()
+    }
+
+    private fun updateSoalType(isPilihanGanda: Boolean) {
+        val tvSoalType = floatingView?.findViewById<TextView>(R.id.tvSoalType)
+        if (tvSoalType != null) {
+            tvSoalType.text = if (isPilihanGanda) "Pilihan Ganda" else "Essay"
+            tvSoalType.visibility = android.view.View.VISIBLE
+        }
     }
 
     private fun callWorker(prompt: String, seriousMode: Boolean = false): String {
@@ -239,6 +335,7 @@ class FloatingNotesService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         floatingView?.let { windowManager.removeView(it) }
+        unregisterJawabReceiver()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

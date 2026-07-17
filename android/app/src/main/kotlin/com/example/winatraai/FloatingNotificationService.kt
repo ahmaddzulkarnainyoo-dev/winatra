@@ -4,7 +4,9 @@ import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -14,11 +16,16 @@ import androidx.core.app.NotificationCompat
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class FloatingNotificationService : Service() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var floatingView: View
+    private val workerUrl = "https://winatraai.himlabnews.workers.dev"
+    private val mainHandler = Handler(Looper.getMainLooper())
     private val params: WindowManager.LayoutParams by lazy {
         WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -79,10 +86,37 @@ class FloatingNotificationService : Service() {
         }
 
         floatingView.setOnClickListener {
-            // TODO: Buka floating chat / detail
+            if (prompt.isNotEmpty()) {
+                Thread {
+                    val result = callWorker(prompt)
+                    mainHandler.post {
+                        bodyView.text = result
+                    }
+                }.start()
+            }
         }
 
         windowManager.addView(floatingView, params)
+    }
+
+    private fun callWorker(prompt: String, seriousMode: Boolean = false): String {
+        return try {
+            val conn = URL(workerUrl).openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.doOutput = true
+
+            val body = JSONObject().apply {
+                put("prompt", prompt)
+                put("seriousMode", seriousMode)
+            }
+            conn.outputStream.write(body.toString().toByteArray())
+
+            val response = conn.inputStream.bufferedReader().readText()
+            JSONObject(response).getString("answer")
+        } catch (e: Exception) {
+            "Gagal ambil jawaban: ${e.message}"
+        }
     }
 
     override fun onDestroy() {

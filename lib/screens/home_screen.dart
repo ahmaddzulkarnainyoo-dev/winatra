@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:winatraai/core/services/accessibility_permission_service.dart';
 import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/core/services/streak_service.dart';
+import 'package:winatraai/core/services/widget_preference_service.dart';
 import 'package:winatraai/core/widgets/ai_popup.dart';
 import 'package:winatraai/screens/account_screen.dart';
 import 'package:winatraai/screens/login_screen.dart';
@@ -19,12 +20,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? activeMode;
   int streak = 0;
+  bool _floatingMode = true;
 
   @override
   void initState() {
     super.initState();
     _loadStreak();
     _showDailyBriefing();
+    _loadFloatingMode();
+  }
+
+  Future<void> _loadFloatingMode() async {
+    final value = await WidgetPreferenceService().isFloatingMode();
+    if (!mounted) return;
+    setState(() {
+      _floatingMode = value;
+    });
   }
 
   Future<void> _loadStreak() async {
@@ -136,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final modeLabel = mode == 'pelajar' ? 'Pelajar' : 'Daily';
                     try {
                       if (mode == 'pelajar') {
-                        await channel.invokeMethod('startFloatingNotes', {'mode': mode});
+                        await channel.invokeMethod('startFloatingNotes', {'mode': mode, 'floatingMode': _floatingMode});
                       } else {
                         await channel.invokeMethod('startFloating', {'mode': mode, 'prompt': ''});
                       }
@@ -244,6 +255,28 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
             icon: const Icon(Icons.person_outline),
+          ),
+          // Toggle Widget Mengambang
+          Builder(
+            builder: (ctx) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Mengambang', style: theme.textTheme.labelSmall),
+                  Switch(
+                    value: _floatingMode,
+                    onChanged: (val) async {
+                      await WidgetPreferenceService().setFloatingMode(val);
+                      if (!mounted) return;
+                      setState(() {
+                        _floatingMode = val;
+                      });
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ],
+              );
+            },
           ),
           IconButton(
             tooltip: 'Accessibility Settings',
