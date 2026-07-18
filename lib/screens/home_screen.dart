@@ -7,8 +7,10 @@ import 'package:winatraai/core/services/streak_service.dart';
 import 'package:winatraai/core/services/widget_preference_service.dart';
 import 'package:winatraai/core/widgets/ai_popup.dart';
 import 'package:winatraai/screens/account_screen.dart';
+import 'package:winatraai/screens/keyboard_setup_screen.dart';
 import 'package:winatraai/screens/login_screen.dart';
 import 'package:winatraai/screens/mode_ujian_setup_screen.dart';
+import 'package:winatraai/screens/notifikasi_setup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,58 +143,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 setState(() {
                   activeMode = mode;
                 });
-                  if (mode == 'pelajar' || mode == 'daily') {
-                    final scaffold = ScaffoldMessenger.of(context);
-                    const channel = MethodChannel('com.winatra.ai/floating_service');
-                    final modeLabel = mode == 'pelajar' ? 'Pelajar' : 'Daily';
-                    try {
-                      if (mode == 'pelajar') {
-                        await channel.invokeMethod('startFloatingNotes', {'mode': mode, 'floatingMode': _floatingMode});
-                      } else {
-                        await channel.invokeMethod('startFloating', {'mode': mode, 'prompt': ''});
-                      }
-                      if (!mounted) return;
-                      scaffold.showSnackBar(
-                        SnackBar(
-                          content: Text('Mode $modeLabel aktif!'),
-                        ),
-                      );
-                    } on PlatformException catch (e) {
-                      if (e.code == 'NO_PERMISSION') {
-                        debugPrint('startFloating: overlay permission not granted');
-                        if (!mounted) return;
-                        scaffold.showSnackBar(
-                          SnackBar(
-                            content: const Text('Aktifkan izin overlay dulu di menu Home'),
-                            duration: const Duration(seconds: 4),
-                            action: SnackBarAction(
-                              label: 'Buka Pengaturan',
-                              onPressed: () async {
-                                const overlayChannel = MethodChannel('com.winatra.ai/overlay');
-                                await overlayChannel.invokeMethod('requestOverlayPermission');
-                              },
-                            ),
-                          ),
-                        );
-                      } else {
-                        debugPrint('startFloating PlatformException: $e');
-                        if (!mounted) return;
-                        scaffold.showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${e.message}'),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      debugPrint('startFloating error: $e');
-                      if (!mounted) return;
-                      scaffold.showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $e'),
-                        ),
-                      );
-                    }
-                  }
+                if (mode == 'notifikasi') {
+                  if (!mounted) return;
+                  final navigator = Navigator.of(context);
+                  navigator.push(
+                    MaterialPageRoute(
+                      builder: (_) => const NotifikasiSetupScreen(),
+                    ),
+                  );
+                }
                 if (mode == 'ujian') {
                   if (!mounted) return;
                   final navigator = Navigator.of(context);
@@ -317,17 +276,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: ListView(
                     children: [
-                      buildModeCard(
-                        mode: 'pelajar',
-                        title: 'Mode Pelajar',
-                        description: 'Fokus belajar dengan bantuan cepat.',
-                        icon: Icons.school_outlined,
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.keyboard_alt_outlined),
+                          title: const Text('Keyboard Winatra'),
+                          subtitle: const Text('Atur dan uji keyboard di sini'),
+                          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const KeyboardSetupScreen()),
+                            );
+                          },
+                        ),
                       ),
+                      const SizedBox(height: 12),
                       buildModeCard(
-                        mode: 'daily',
-                        title: 'Mode Daily',
-                        description: 'Bantu aktivitas harian sehari-hari.',
-                        icon: Icons.calendar_today_outlined,
+                        mode: 'notifikasi',
+                        title: 'Mode Notifikasi',
+                        description: 'Pelajar & Daily — notifikasi pintar.',
+                        icon: Icons.notifications_outlined,
                       ),
                       buildModeCard(
                         mode: 'ujian',

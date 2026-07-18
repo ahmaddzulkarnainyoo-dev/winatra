@@ -110,6 +110,14 @@ class MainActivity : FlutterActivity() {
                         startActivity(intent)
                         result.success(null)
                     }
+                    "isDefaultKeyboard" -> {
+                        val defaultInputMethod = Settings.Secure.getString(
+                            contentResolver,
+                            Settings.Secure.DEFAULT_INPUT_METHOD
+                        )
+                        val isDefault = defaultInputMethod?.contains("com.example.winatraai") == true
+                        result.success(isDefault)
+                    }
                     else -> result.notImplemented()
                 }
             }
