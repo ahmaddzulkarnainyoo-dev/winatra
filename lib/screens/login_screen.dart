@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/overlay_permission_service.dart';
-import 'home_screen.dart';
+import 'main_nav_screen.dart';
 import 'overlay_permission_screen.dart';
 import 'register_screen.dart';
 
@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (hasPermission) {
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => const HomeScreen()),
+                            MaterialPageRoute(builder: (_) => const MainNavScreen()),
                           );
                         } else {
                           Navigator.pushReplacement(

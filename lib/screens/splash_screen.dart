@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_colors.dart';
 import '../core/services/overlay_permission_service.dart';
 import 'enable_keyboard_screen.dart';
-import 'home_screen.dart';
 import 'login_screen.dart';
+import 'main_nav_screen.dart';
 import 'overlay_permission_screen.dart';
 import 'tos_screen.dart';
 
@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } else if (!keyboardShown) {
         destination = const EnableKeyboardScreen();
       } else {
-        destination = const HomeScreen();
+        destination = const MainNavScreen();
       }
     }
 

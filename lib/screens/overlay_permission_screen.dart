@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/services/overlay_permission_service.dart';
-import 'home_screen.dart';
+import 'main_nav_screen.dart';
 
 class OverlayPermissionScreen extends StatefulWidget {
   const OverlayPermissionScreen({super.key});
@@ -30,7 +30,7 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen> with 
       if (has && context.mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => const MainNavScreen()),
         );
       }
     }
@@ -73,7 +73,7 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen> with 
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    MaterialPageRoute(builder: (_) => const MainNavScreen()),
                   );
                 },
                 child: const Text('Nanti saja'),
