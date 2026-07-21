@@ -15,6 +15,10 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _expandController;
+  late Animation<double> _expandAnimation;
+  late AnimationController _lookController;
+  late Animation<double> _lookAnimation;
 
   // Draggable position
   Offset _position = const Offset(0, 0);
@@ -44,6 +48,21 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
     )..repeat(reverse: true);
     _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeOutCubic,
+    );
+    _lookController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _lookAnimation = Tween<double>(begin: -0.08, end: 0.08).animate(
+      CurvedAnimation(parent: _lookController, curve: Curves.easeInOut),
     );
 
     _loadPosition();
@@ -77,6 +96,8 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
   @override
   void dispose() {
     _pulseController.dispose();
+    _expandController.dispose();
+    _lookController.dispose();
     _chatController.dispose();
     super.dispose();
   }
@@ -87,6 +108,15 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
       _currentMood = _moods[Random().nextInt(_moods.length)];
     });
     Future.delayed(const Duration(seconds: 15), _cycleMood);
+  }
+
+  void _toggleExpanded() {
+    if (_isExpanded) {
+      _expandController.reverse();
+    } else {
+      _expandController.forward();
+    }
+    setState(() => _isExpanded = !_isExpanded);
   }
 
   @override
@@ -101,13 +131,16 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // Chat bubble
-          if (_isExpanded) _buildChatBubble(context),
+          if (_isExpanded)
+            SizeTransition(
+              sizeFactor: _expandAnimation,
+              alignment: Alignment.topRight,
+              child: _buildChatBubble(context),
+            ),
           const SizedBox(height: 8),
           // Avatar robot — draggable
           GestureDetector(
-            onTap: () {
-              setState(() => _isExpanded = !_isExpanded);
-            },
+            onTap: _toggleExpanded,
             onPanUpdate: (details) {
               setState(() {
                 _position += details.delta;
@@ -137,14 +170,47 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    child: Center(
-                      child: Image.asset(
-                        _currentMood.assetPath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Text(
-                          _currentMood.emoji,
-                          style: TextStyle(fontSize: 28),
-                        ),
+                    child: ClipOval(
+                      child: Stack(
+                        children: [
+                          // Robot image
+                          Center(
+                            child: Image.asset(
+                              _currentMood.assetPath,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Text(
+                                _currentMood.emoji,
+                                style: const TextStyle(fontSize: 28),
+                              ),
+                            ),
+                          ),
+                          // Mata robot "melirik" — sinar mata bergerak pelan
+                          AnimatedBuilder(
+                            animation: _lookAnimation,
+                            builder: (context, child) {
+                              return Positioned(
+                                top: 16,
+                                left: 20 + (_lookAnimation.value * 8),
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00F0FF).withValues(alpha: 0.6),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -188,7 +254,7 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
                   height: 24,
                   errorBuilder: (context, error, stackTrace) => Text(
                     _currentMood.emoji,
-                    style: TextStyle(fontSize: 20),
+                    style: const TextStyle(fontSize: 20),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -243,7 +309,7 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
                     if (_chatController.text.isNotEmpty) {
                       setState(() {
                         _messages.add(_chatController.text);
-                        _messages.add('🤖 ' + _getAutoReply(_chatController.text));
+                        _messages.add('🤖 ${_getAutoReply(_chatController.text)}');
                         _chatController.clear();
                       });
                     }

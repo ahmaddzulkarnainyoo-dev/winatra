@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,7 +37,11 @@ class AuthService {
       await _createUserDoc(cred.user!.uid, isReferred: referredBy != null);
       await activateTrial(cred.user!.uid);
       if (referredBy != null) {
-        await _applyReferral(referredBy);
+        unawaited(
+          _applyReferral(referredBy).catchError((e) {
+            debugPrint('Referral gagal: $e');
+          }),
+        );
       }
       return null;
     } on FirebaseAuthException catch (e) {

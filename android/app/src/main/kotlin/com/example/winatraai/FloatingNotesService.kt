@@ -58,12 +58,24 @@ class FloatingNotesService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val wm = getSystemService(WINDOW_SERVICE) as? WindowManager
+        if (wm == null) {
+            android.util.Log.e("FloatingNotesService", "windowManager is null — cannot create service")
+            stopSelf()
+            return
+        }
+        windowManager = wm
         createNotificationChannel()
         createPersistentChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!::windowManager.isInitialized) {
+            android.util.Log.e("FloatingNotesService", "windowManager not initialized")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         currentMode = intent?.getStringExtra("mode") ?: currentMode
         floatingMode = intent?.getBooleanExtra("floatingMode", true) ?: true
 
@@ -84,7 +96,15 @@ class FloatingNotesService : Service() {
             unregisterJawabReceiver()
         } else {
             // Mode non-floating: tampilkan persistent notification dengan tombol Jawab
-            floatingView?.let { windowManager.removeView(it) }
+            try {
+                floatingView?.let {
+                    if (::windowManager.isInitialized) {
+                        windowManager.removeView(it)
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FloatingNotesService", "Gagal remove floating view", e)
+            }
             floatingView = null
             showPersistentNotification()
             registerJawabReceiver()
@@ -126,23 +146,27 @@ class FloatingNotesService : Service() {
     }
 
     private fun showPersistentNotification() {
-        // Intent untuk tombol Jawab — broadcast ke receiver
-        val jawabIntent = Intent("com.winatraai.JAWAB_ACTION")
-        val jawabPendingIntent = PendingIntent.getBroadcast(
-            this, 1, jawabIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        try {
+            // Intent untuk tombol Jawab — broadcast ke receiver
+            val jawabIntent = Intent("com.winatraai.JAWAB_ACTION")
+            val jawabPendingIntent = PendingIntent.getBroadcast(
+                this, 1, jawabIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
 
-        val notification = NotificationCompat.Builder(this, persistentChannelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Winatra — Mode Pelajar")
-            .setContentText("Tekan Jawab untuk menjawab soal dari clipboard")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .addAction(android.R.drawable.ic_menu_edit, "Jawab", jawabPendingIntent)
-            .build()
+            val notification = NotificationCompat.Builder(this, persistentChannelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("Winatra — Mode Pelajar")
+                .setContentText("Tekan Jawab untuk menjawab soal dari clipboard")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .addAction(android.R.drawable.ic_menu_edit, "Jawab", jawabPendingIntent)
+                .build()
 
-        startForeground(1001, notification)
+            startForeground(1001, notification)
+        } catch (e: Exception) {
+            android.util.Log.e("FloatingNotesService", "Gagal show persistent notification", e)
+        }
     }
 
     private fun showFloatingWidget() {
@@ -299,42 +323,53 @@ class FloatingNotesService : Service() {
     }
 
     private fun showAnswerNotification(text: String, showKenapaButton: Boolean) {
-        // RemoteViews untuk collapsed (small) dan expanded (big)
-        val smallRv = RemoteViews(packageName, R.layout.notification_answer_small).apply {
-            setTextViewText(R.id.notification_title_small, "Jawaban Winatra")
-            setTextViewText(R.id.notification_body_small, text)
-        }
-        val bigRv = RemoteViews(packageName, R.layout.notification_answer).apply {
-            setTextViewText(R.id.notification_title, "Jawaban Winatra")
-            setTextViewText(R.id.notification_body, text)
-        }
-
-        val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // ganti pakai icon Winatra nanti
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setCustomContentView(smallRv)
-            .setCustomBigContentView(bigRv)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-
-        if (showKenapaButton) {
-            val kenapaIntent = Intent(this, KenapaReceiver::class.java).apply {
-                putExtra("alasan", lastFullAnswer)
+        try {
+            val nm = getSystemService(NotificationManager::class.java) ?: return
+            // RemoteViews untuk collapsed (small) dan expanded (big)
+            val smallRv = RemoteViews(packageName, R.layout.notification_answer_small).apply {
+                setTextViewText(R.id.notification_title_small, "Jawaban Winatra")
+                setTextViewText(R.id.notification_body_small, text)
             }
-            val pendingIntent = PendingIntent.getBroadcast(
-                this, 0, kenapaIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(0, "Kenapa?", pendingIntent)
-        }
+            val bigRv = RemoteViews(packageName, R.layout.notification_answer).apply {
+                setTextViewText(R.id.notification_title, "Jawaban Winatra")
+                setTextViewText(R.id.notification_body, text)
+            }
 
-        (getSystemService(NotificationManager::class.java))
-            .notify(System.currentTimeMillis().toInt(), builder.build())
+            val builder = NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(android.R.drawable.ic_dialog_info) // ganti pakai icon Winatra nanti
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setCustomContentView(smallRv)
+                .setCustomBigContentView(bigRv)
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+
+            if (showKenapaButton) {
+                val kenapaIntent = Intent(this, KenapaReceiver::class.java).apply {
+                    putExtra("alasan", lastFullAnswer)
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    this, 0, kenapaIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(0, "Kenapa?", pendingIntent)
+            }
+
+            nm.notify(System.currentTimeMillis().toInt(), builder.build())
+        } catch (e: Exception) {
+            android.util.Log.e("FloatingNotesService", "Gagal show answer notification", e)
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        floatingView?.let { windowManager.removeView(it) }
+        try {
+            if (::windowManager.isInitialized) {
+                floatingView?.let { windowManager.removeView(it) }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FloatingNotesService", "Gagal cleanup di onDestroy", e)
+        }
+        floatingView = null
         unregisterJawabReceiver()
     }
 

@@ -108,7 +108,10 @@ class _NotifikasiSetupScreenState extends State<NotifikasiSetupScreen> {
       debugPrint('startFloating error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: const Text('Gagal memulai mode, coba lagi'),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -122,7 +125,7 @@ class _NotifikasiSetupScreenState extends State<NotifikasiSetupScreen> {
         _isActive = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mode dihentikan')),
+        SnackBar(content: const Text('Mode dihentikan')),
       );
     } catch (e) {
       debugPrint('stopFloating error: $e');

@@ -82,12 +82,12 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     }
                     "startFloatingNotes" -> {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                        val mode = call.argument<String>("mode") ?: "pelajar"
+                        val floatingMode = call.argument<Boolean>("floatingMode") ?: true
+                        if (floatingMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                             result.error("NO_PERMISSION", "Overlay permission belum aktif", null)
                             return@setMethodCallHandler
                         }
-                        val mode = call.argument<String>("mode") ?: "pelajar"
-                        val floatingMode = call.argument<Boolean>("floatingMode") ?: true
                         val intent = Intent(this, FloatingNotesService::class.java)
                         intent.putExtra("mode", mode)
                         intent.putExtra("floatingMode", floatingMode)

@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:winatraai/core/services/accessibility_permission_service.dart';
-import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/core/services/streak_service.dart';
 import 'package:winatraai/core/services/widget_preference_service.dart';
 import 'package:winatraai/core/widgets/ai_popup.dart';
-import 'package:winatraai/screens/account_screen.dart';
+import 'package:winatraai/core/widgets/streak_dialog.dart';
 import 'package:winatraai/screens/keyboard_setup_screen.dart';
-import 'package:winatraai/screens/login_screen.dart';
 import 'package:winatraai/screens/mode_ujian_setup_screen.dart';
 import 'package:winatraai/screens/notifikasi_setup_screen.dart';
 
@@ -49,14 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     if (bonus > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('🔥 Streak $value hari! Bonus +$bonus kuota!'),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) => StreakDialog(streakValue: value, bonus: bonus),
+        );
       });
     }
   }
@@ -112,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cardTheme = theme.cardTheme;
+    const electricBlue = Color(0xFF00D4FF);
 
     Widget buildModeCard({
       required String mode,
@@ -130,6 +126,15 @@ class _HomeScreenState extends State<HomeScreen> {
               color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
               width: isActive ? 2.2 : 1.0,
             ),
+            boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: electricBlue.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
           ),
           child: Card(
             margin: EdgeInsets.zero,
@@ -180,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             title,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
+                              color: isActive ? electricBlue : null,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -205,16 +211,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('Winatra${streak > 0 ? '  🔥 $streak hari' : ''}'),
         actions: [
-          IconButton(
-            tooltip: 'Akun Saya',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AccountScreen()),
-              );
-            },
-            icon: const Icon(Icons.person_outline),
-          ),
           // Toggle Widget Mengambang
           Builder(
             builder: (ctx) {
@@ -243,19 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
               await AccessibilityPermissionService.openAccessibilitySettings();
             },
             icon: const Icon(Icons.accessibility_outlined),
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: () async {
-              await AuthService().signOut();
-              if (!context.mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-            icon: const Icon(Icons.logout_outlined),
           ),
         ],
       ),

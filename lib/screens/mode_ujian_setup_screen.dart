@@ -134,15 +134,23 @@ class _ModeUjianSetupScreenState extends State<ModeUjianSetupScreen> {
               // Tombol Simpan
               ElevatedButton(
                 onPressed: () async {
-                  await ExamModeService().saveExamRange(
-                    _selectedRange!.start,
-                    _selectedRange!.end,
-                  );
+                  try {
+                    await ExamModeService().saveExamRange(
+                      _selectedRange!.start,
+                      _selectedRange!.end,
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menyimpan: $e')),
+                    );
+                    return;
+                  }
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Mode Ujian disimpan')),
                   );
-                  Navigator.pop(context);
+                  Navigator.pop(context, true);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.secondary,
@@ -171,12 +179,20 @@ class _ModeUjianSetupScreenState extends State<ModeUjianSetupScreen> {
                   ),
                 );
                 if (confirm == true) {
-                  await ExamModeService().cancelExamMode();
+                  try {
+                    await ExamModeService().cancelExamMode();
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal membatalkan: $e')),
+                    );
+                    return;
+                  }
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Mode Ujian dibatalkan')),
                   );
-                  Navigator.pop(context);
+                  Navigator.pop(context, true);
                 }
               },
               icon: const Icon(Icons.cancel_outlined),

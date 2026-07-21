@@ -14,6 +14,7 @@ class _AccountScreenState extends State<AccountScreen> {
   final _auth = AuthService();
   WinatraUser? _user;
   bool _loading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -22,12 +23,25 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _loadUser() async {
-    final user = await _auth.fetchCurrentUserDoc();
-    if (!mounted) return;
     setState(() {
-      _user = user;
-      _loading = false;
+      _loading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final user = await _auth.fetchCurrentUserDoc();
+      if (!mounted) return;
+      setState(() {
+        _user = user;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Gagal memuat data akun. $e';
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -41,11 +55,35 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // Kartu Email
-                Card(
+          : _errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          _errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _loadUser,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Kartu Email
+                    Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -103,7 +141,12 @@ class _AccountScreenState extends State<AccountScreen> {
                 // Tombol Keluar
                 FilledButton.icon(
                   onPressed: () async {
-                    await _auth.signOut();
+                    try {
+                      await _auth.signOut();
+                    } catch (_) {
+                      // Biarkan user tetap melihat pesan error di layar jika sign out gagal.
+                    }
+
                     if (!context.mounted) return;
                     Navigator.pushAndRemoveUntil(
                       context,
