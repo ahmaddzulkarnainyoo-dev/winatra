@@ -16,6 +16,8 @@ dependencies:
   shared_preferences: ^2.3.2
   permission_handler: ^11.3.1
   device_info_plus: ^10.1.2
+  share_plus: ^9.0.0
+  http: ^1.2.1
   # NOTE: tambahin dependency baru satu-satu, jangan borongan.
 
   # Tiap nambah, langsung test build di GitHub Actions sebelum lanjut nambah yang lain.
@@ -37,4 +39,3 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/images/logo.png"
-    

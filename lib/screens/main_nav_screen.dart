@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'account_screen.dart';
+import 'chatbot_screen.dart';
 import 'home_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
@@ -14,7 +15,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const _ChatbotPlaceholderScreen(),
+    const ChatbotScreen(),
     const AccountScreen(),
   ];
 
@@ -60,19 +61,3 @@ class _MainNavScreenState extends State<MainNavScreen> {
   }
 }
 
-class _ChatbotPlaceholderScreen extends StatelessWidget {
-  const _ChatbotPlaceholderScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(
-          'Chatbot Winatra - Coming Soon',
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}

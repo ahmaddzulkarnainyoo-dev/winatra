@@ -22,6 +22,7 @@ class WinatraUser {
 
   final bool hasUsedTrialPremium; // trial premium 3 hari, sekali seumur akun (4.4)
   final int referralSuccessCount; // hitung undangan yang berhasil daftar
+  final DateTime? trialEndDate; // kapan trial berakhir, null jika belum pernah aktivasi
 
   WinatraUser({
     required this.uid,
@@ -35,6 +36,7 @@ class WinatraUser {
     this.lastActiveAt,
     this.hasUsedTrialPremium = false,
     this.referralSuccessCount = 0,
+    this.trialEndDate,
   });
 
   /// Kuota starting sesuai tier baru daftar.
@@ -66,6 +68,9 @@ class WinatraUser {
           : null,
       hasUsedTrialPremium: map['hasUsedTrialPremium'] as bool? ?? false,
       referralSuccessCount: map['referralSuccessCount'] as int? ?? 0,
+      trialEndDate: map['trialEndDate'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['trialEndDate'] as int)
+          : null,
     );
   }
 
@@ -80,5 +85,6 @@ class WinatraUser {
         'lastActiveAt': lastActiveAt?.millisecondsSinceEpoch,
         'hasUsedTrialPremium': hasUsedTrialPremium,
         'referralSuccessCount': referralSuccessCount,
+        if (trialEndDate != null) 'trialEndDate': trialEndDate!.millisecondsSinceEpoch,
       };
 }

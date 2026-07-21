@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 /// AI Popup Winatra — widget kecil floating di pojok kanan bawah.
 /// Tidak butuh sprite, cukup emoji + teks yang berubah berdasarkan konteks.
@@ -35,6 +38,13 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
   Mood _currentMood = const Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal, 'assets/images/robot/robot_idle.png');
   final _chatController = TextEditingController();
   final _messages = <String>[];
+  bool _sending = false;
+
+  // Ganti URL ini dengan URL Worker setelah deploy.
+  // Format: https://winatraai.nama-akun.workers.dev/ask
+  static const String _workerUrl = 'https://winatraai.YOUR_USERNAME.workers.dev/ask';
+
+  final _auth = AuthService();
 
   static const String _prefKeyPosX = 'ai_popup_pos_x';
   static const String _prefKeyPosY = 'ai_popup_pos_y';
@@ -154,9 +164,11 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
               builder: (context, child) {
                 return Transform.scale(
                   scale: _isExpanded ? 1.0 : _pulseAnimation.value,
-                  child: Container(
-                    width: 56,
-                    height: 56,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutBack,
+                    width: _isExpanded ? 72 : 56,
+                    height: _isExpanded ? 72 : 56,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: const LinearGradient(
@@ -164,25 +176,40 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00F0FF).withValues(alpha: 0.4),
+                          color: const Color(0xFF00F0FF).withValues(alpha: _isExpanded ? 0.6 : 0.4),
                           blurRadius: 12,
-                          spreadRadius: 1,
+                          spreadRadius: _isExpanded ? 3.0 : 1.0,
                         ),
                       ],
                     ),
                     child: ClipOval(
                       child: Stack(
                         children: [
-                          // Robot image
+                          // Robot image — animated switch
                           Center(
-                            child: Image.asset(
-                              _currentMood.assetPath,
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => Text(
-                                _currentMood.emoji,
-                                style: const TextStyle(fontSize: 28),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              switchInCurve: Curves.easeOutBack,
+                              switchOutCurve: Curves.easeIn,
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                return ScaleTransition(
+                                  scale: animation,
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: Image.asset(
+                                _currentMood.assetPath,
+                                key: ValueKey(_currentMood.assetPath),
+                                width: _isExpanded ? 52 : 40,
+                                height: _isExpanded ? 52 : 40,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) => Text(
+                                  _currentMood.emoji,
+                                  style: const TextStyle(fontSize: 28),
+                                ),
                               ),
                             ),
                           ),
@@ -303,18 +330,33 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.send, size: 18, color: Color(0xFF00F0FF)),
-                  onPressed: () {
-                    if (_chatController.text.isNotEmpty) {
-                      setState(() {
-                        _messages.add(_chatController.text);
-                        _messages.add('🤖 ${_getAutoReply(_chatController.text)}');
-                        _chatController.clear();
-                      });
-                    }
-                  },
-                ),
+                  IconButton(
+                    icon: _sending
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF00F0FF)),
+                          )
+                        : const Icon(Icons.send, size: 18, color: Color(0xFF00F0FF)),
+                    onPressed: _sending
+                        ? null
+                        : () async {
+                            if (_chatController.text.isNotEmpty) {
+                              final msg = _chatController.text;
+                              setState(() {
+                                _messages.add(msg);
+                                _chatController.clear();
+                                _sending = true;
+                              });
+                              final reply = await _askWorker(msg);
+                              if (!mounted) return;
+                              setState(() {
+                                _messages.add('🤖 $reply');
+                                _sending = false;
+                              });
+                            }
+                          },
+                  ),
               ],
             ),
           ),
@@ -323,11 +365,26 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
     );
   }
 
-  String _getAutoReply(String msg) {
-    if (msg.contains('halo') || msg.contains('hai')) return 'Halo juga! Ada yang bisa dibantu?';
-    if (msg.contains('belajar') || msg.contains('soal')) return 'Copy soalnya, tekan Jawab di floating service ya!';
-    if (msg.contains('makasih') || msg.contains('terima kasih')) return 'Sama-sama! 😊';
-    return 'Baik, saya catat. Ada lagi?';
+  /// Kirim pertanyaan ke Worker AI dan dapatkan jawaban.
+  Future<String> _askWorker(String message) async {
+    try {
+      final uid = _auth.currentUser?.uid ?? 'anonymous';
+      final response = await http.post(
+        Uri.parse(_workerUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'message': message,
+          'uid': uid,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['reply'] as String? ?? 'Tidak ada jawaban.';
+      }
+      return 'Gagal terhubung ke AI (${response.statusCode}). Coba lagi.';
+    } catch (e) {
+      return 'Gagal terhubung ke server. $e';
+    }
   }
 }
 

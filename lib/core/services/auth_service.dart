@@ -117,10 +117,23 @@ class AuthService {
   }
 
   /// Set trial 3 hari untuk user baru (dipanggil setelah signUp sukses).
+  /// Aktivasi trial 3 hari — dipanggil saat signUp.
   Future<void> activateTrial(String uid) async {
     final endDate = DateTime.now().add(const Duration(days: 3));
     await _db.collection('users').doc(uid).update({
       'trialEndDate': endDate.millisecondsSinceEpoch,
+      'hasUsedTrialPremium': true,
+    });
+  }
+
+  /// Aktivasi trial dari tombol di AccountScreen (user Free yg belum pernah trial).
+  Future<void> activateTrialForCurrentUser() async {
+    final uid = currentUser?.uid;
+    if (uid == null) return;
+    final endDate = DateTime.now().add(const Duration(days: 3));
+    await _db.collection('users').doc(uid).update({
+      'trialEndDate': endDate.millisecondsSinceEpoch,
+      'hasUsedTrialPremium': true,
     });
   }
 
