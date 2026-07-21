@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/notification_permission_service.dart';
 import '../core/services/overlay_permission_service.dart';
 import 'main_nav_screen.dart';
 
@@ -15,6 +16,11 @@ class _OverlayPermissionScreenState extends State<OverlayPermissionScreen> with 
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _requestNotificationPermission();
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    await NotificationPermissionService.requestPermission();
   }
 
   @override

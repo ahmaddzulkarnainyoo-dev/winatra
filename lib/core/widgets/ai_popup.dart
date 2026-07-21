@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// AI Popup Winatra — widget kecil floating di pojok kanan bawah.
 /// Tidak butuh sprite, cukup emoji + teks yang berubah berdasarkan konteks.
@@ -15,6 +16,10 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  // Draggable position
+  Offset _position = const Offset(0, 0);
+  bool _positionLoaded = false;
+
   // Ekspresi & mood
   final _moods = const <Mood>[
     Mood('🤖', 'Halo! Ada yang bisa dibantu?', MoodType.normal, 'assets/images/robot/robot_idle.png'),
@@ -27,6 +32,9 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
   final _chatController = TextEditingController();
   final _messages = <String>[];
 
+  static const String _prefKeyPosX = 'ai_popup_pos_x';
+  static const String _prefKeyPosY = 'ai_popup_pos_y';
+
   @override
   void initState() {
     super.initState();
@@ -38,8 +46,32 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
+    _loadPosition();
+
     // Ganti mood setiap 15 detik
     Future.delayed(const Duration(seconds: 15), _cycleMood);
+  }
+
+  Future<void> _loadPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final x = prefs.getDouble(_prefKeyPosX);
+    final y = prefs.getDouble(_prefKeyPosY);
+    if (x != null && y != null) {
+      setState(() {
+        _position = Offset(x, y);
+        _positionLoaded = true;
+      });
+    } else {
+      setState(() {
+        _positionLoaded = true;
+      });
+    }
+  }
+
+  Future<void> _savePosition(Offset pos) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_prefKeyPosX, pos.dx);
+    await prefs.setDouble(_prefKeyPosY, pos.dy);
   }
 
   @override
@@ -59,9 +91,11 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    if (!_positionLoaded) return const SizedBox.shrink();
+
     return Positioned(
-      right: 16,
-      bottom: 16,
+      left: _position.dx,
+      top: _position.dy,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -69,10 +103,18 @@ class _AiPopupState extends State<AiPopup> with TickerProviderStateMixin {
           // Chat bubble
           if (_isExpanded) _buildChatBubble(context),
           const SizedBox(height: 8),
-          // Avatar robot
+          // Avatar robot — draggable
           GestureDetector(
             onTap: () {
               setState(() => _isExpanded = !_isExpanded);
+            },
+            onPanUpdate: (details) {
+              setState(() {
+                _position += details.delta;
+              });
+            },
+            onPanEnd: (_) {
+              _savePosition(_position);
             },
             child: AnimatedBuilder(
               animation: _pulseAnimation,
