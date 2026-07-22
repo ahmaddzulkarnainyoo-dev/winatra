@@ -16,7 +16,7 @@ dependencies {
 
 android {
     namespace = "com.example.winatraai"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
