@@ -2,6 +2,8 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:label="winatraai"
@@ -38,6 +40,7 @@
             android:value="2" />
         <service
             android:name=".FloatingNotesService"
+            android:foregroundServiceType="dataSync"
             android:exported="false" />
         <service
             android:name=".keyboard.WinatraKeyboardService"

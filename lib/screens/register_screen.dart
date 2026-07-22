@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/services/auth_service.dart';
+import '../core/widgets/winatra_snackbar.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -75,18 +76,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       if (mounted) setState(() => _isLoading = false);
                       if (error == null) {
                         if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Daftar berhasil, silakan masuk')),
-                        );
+                        showWinatraSnackbar(context, message: 'Daftar berhasil, silakan masuk');
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (_) => const LoginScreen()),
                         );
                       } else {
                         if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error)),
-                        );
+                        showWinatraSnackbar(context, message: error, isError: true);
                       }
                     },
               child: _isLoading

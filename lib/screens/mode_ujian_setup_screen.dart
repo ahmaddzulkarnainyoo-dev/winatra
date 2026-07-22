@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/services/exam_mode_service.dart';
+import '../core/widgets/winatra_snackbar.dart';
 
 /// Screen untuk mengatur Mode Ujian — user memilih rentang tanggal
 /// selama periode ujian berlangsung.
@@ -141,15 +142,11 @@ class _ModeUjianSetupScreenState extends State<ModeUjianSetupScreen> {
                     );
                   } catch (e) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal menyimpan: $e')),
-                    );
+                    showWinatraSnackbar(context, message: 'Gagal menyimpan: $e', isError: true);
                     return;
                   }
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mode Ujian disimpan')),
-                  );
+                  showWinatraSnackbar(context, message: 'Mode Ujian disimpan');
                   Navigator.pop(context, true);
                 },
                 style: ElevatedButton.styleFrom(
@@ -183,15 +180,11 @@ class _ModeUjianSetupScreenState extends State<ModeUjianSetupScreen> {
                     await ExamModeService().cancelExamMode();
                   } catch (e) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal membatalkan: $e')),
-                    );
+                    showWinatraSnackbar(context, message: 'Gagal membatalkan: $e', isError: true);
                     return;
                   }
                   if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mode Ujian dibatalkan')),
-                  );
+                  showWinatraSnackbar(context, message: 'Mode Ujian dibatalkan');
                   Navigator.pop(context, true);
                 }
               },

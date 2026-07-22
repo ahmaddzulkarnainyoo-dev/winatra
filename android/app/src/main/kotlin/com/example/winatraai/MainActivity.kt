@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.content.SharedPreferences
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -13,6 +14,7 @@ class MainActivity : FlutterActivity() {
     private val ACCESSIBILITY_CHANNEL = "com.winatra.ai/accessibility"
     private val FLOATING_CHANNEL = "com.winatra.ai/floating_service"
     private val KEYBOARD_CHANNEL = "com.winatra.ai/keyboard"
+    private val MODE_CHANNEL = "com.winatra/mode"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -74,6 +76,10 @@ class MainActivity : FlutterActivity() {
                         }
                         val mode = call.argument<String>("mode") ?: "daily"
                         val prompt = call.argument<String>("prompt") ?: ""
+                        val uid = call.argument<String>("uid") ?: ""
+                        // Simpan uid ke SharedPreferences agar bisa dibaca FloatingNotesService
+                        val prefs = getSharedPreferences("com.winatraai.prefs", MODE_PRIVATE)
+                        prefs.edit().putString("uid", uid).apply()
                         val intent = Intent(this, FloatingNotificationService::class.java).apply {
                             putExtra("mode", mode)
                             putExtra("prompt", prompt)
@@ -84,6 +90,10 @@ class MainActivity : FlutterActivity() {
                     "startFloatingNotes" -> {
                         val mode = call.argument<String>("mode") ?: "pelajar"
                         val floatingMode = call.argument<Boolean>("floatingMode") ?: true
+                        val uid = call.argument<String>("uid") ?: ""
+                        // Simpan uid ke SharedPreferences agar bisa dibaca FloatingNotesService
+                        val prefs = getSharedPreferences("com.winatraai.prefs", MODE_PRIVATE)
+                        prefs.edit().putString("uid", uid).apply()
                         if (floatingMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                             result.error("NO_PERMISSION", "Overlay permission belum aktif", null)
                             return@setMethodCallHandler
@@ -121,7 +131,25 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MODE_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "setMode" -> {
+                        val mode = call.argument<String>("mode") ?: "pelajar"
+                        // Simpan ke SharedPreferences
+                        val prefs = getSharedPreferences("winatra_prefs", MODE_PRIVATE)
+                        prefs.edit().putString("active_mode", mode).apply()
+                        // Kirim ke FloatingNotesService via Intent
+                        val intent = Intent(this, FloatingNotesService::class.java).apply {
+                            putExtra("mode", mode)
+                            putExtra("floatingMode", true) // default floating
+                        }
+                        startService(intent)
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
     }
 }
-
-        

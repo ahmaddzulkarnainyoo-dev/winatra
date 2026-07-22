@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:winatraai/core/models/user_tier.dart';
 import 'package:winatraai/core/services/auth_service.dart';
 import 'package:winatraai/screens/login_screen.dart';
@@ -43,6 +42,17 @@ class _AccountScreenState extends State<AccountScreen> {
         _loading = false;
       });
     }
+  }
+
+  void _showLockedSnackbar() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fitur ini sedang dikembangkan, tunggu update berikutnya'),
+        behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -104,7 +114,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Kartu Tier & Kuota
+                // Kartu Tier & Kuota (Trial DIKUNCI)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -133,15 +143,37 @@ class _AccountScreenState extends State<AccountScreen> {
                         _infoRow(theme, 'Sisa Kuota Harian', '${_user?.dailyQuota ?? '—'}'),
                         const SizedBox(height: 8),
                         _infoRow(theme, 'Streak', '${_user?.streakCount ?? 0} hari'),
-                        // Trial section
-                        ..._buildTrialSection(theme),
+                        const Divider(height: 24),
+                        // Trial — DIKUNCI
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: _showLockedSnackbar,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.lock_outline, size: 14, color: Colors.grey),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Premium Trial — Fitur dalam pengembangan',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // Kartu Referral
+                // Kartu Referral — DIKUNCI
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -150,60 +182,37 @@ class _AccountScreenState extends State<AccountScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.share_outlined, color: theme.colorScheme.primary),
+                            Icon(Icons.share_outlined, color: Colors.grey),
                             const SizedBox(width: 12),
-                            Text('Kode Referral', style: theme.textTheme.labelMedium),
+                            Text('Kode Referral', style: theme.textTheme.labelMedium?.copyWith(color: Colors.grey)),
+                            const Spacer(),
+                            const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _auth.currentUser?.uid.substring(0, 8).toUpperCase() ?? '—',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
+                        InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _showLockedSnackbar,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Bagikan kode ini ke teman. Setiap 3 teman yang berhasil daftar, kamu dapat bonus 10 kuota!',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.people_outline, size: 16, color: theme.colorScheme.primary),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_user?.referralSuccessCount ?? 0} teman berhasil',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                              ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Fitur dalam pengembangan',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: () {
-                            final code = _auth.currentUser?.uid.substring(0, 8).toUpperCase() ?? '';
-                            Share.share(
-                              'Gabung Winatra AI pakai kode referralku: $code\n\nDapatkan asisten AI untuk belajar & kerja sehari-hari! Download sekarang!',
-                            );
-                          },
-                          icon: const Icon(Icons.share, size: 18),
-                          label: const Text('Bagikan'),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(40),
                           ),
                         ),
                       ],
@@ -247,91 +256,6 @@ class _AccountScreenState extends State<AccountScreen> {
         Text(value, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
       ],
     );
-  }
-
-  /// Membuat section trial — tombol aktivasi atau sisa waktu.
-  List<Widget> _buildTrialSection(ThemeData theme) {
-    final user = _user;
-    if (user == null) return [];
-
-    // Cek apakah trial sedang aktif (trialEndDate masih di masa depan)
-    final trialEnd = user.trialEndDate;
-    final now = DateTime.now();
-    final isTrialActive = trialEnd != null && now.isBefore(trialEnd);
-
-    if (isTrialActive) {
-      // Tampilkan sisa waktu trial
-      final remaining = trialEnd.difference(now);
-      final hours = remaining.inHours;
-      final minutes = remaining.inMinutes.remainder(60);
-      return [
-        const Divider(height: 24),
-        Row(
-          children: [
-            Icon(Icons.timer_outlined, size: 16, color: Colors.amber.shade700),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Premium Trial',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.amber.shade700,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Sisa ${hours}j ${minutes}m',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.amber.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ];
-    }
-
-    // Jika tier Free dan belum pernah pakai trial, tampilkan tombol aktivasi
-    if (user.tier == WinatraTier.free && !user.hasUsedTrialPremium) {
-      return [
-        const Divider(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              try {
-                await _auth.activateTrialForCurrentUser();
-                if (!mounted) return;
-                await _loadUser(); // reload data
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Selamat! Trial Premium 3 hari aktif!')),
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Gagal aktivasi trial: $e')),
-                );
-              }
-            },
-            icon: const Icon(Icons.rocket_launch_outlined, size: 18),
-            label: const Text('Coba Premium 3 Hari Gratis'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.amber.shade700,
-              side: BorderSide(color: Colors.amber.shade700),
-              minimumSize: const Size.fromHeight(40),
-            ),
-          ),
-        ),
-      ];
-    }
-
-    return [];
   }
 
   Color _chipColor(WinatraTier? tier, ThemeData theme) {

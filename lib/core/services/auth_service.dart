@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../models/user_tier.dart';
 
@@ -89,19 +90,16 @@ class AuthService {
   }
 
   Future<void> _applyReferral(String inviterUid) async {
-    final inviterRef = _db.collection('users').doc(inviterUid);
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(inviterRef);
-      if (!snap.exists) return;
-      final currentCount = (snap.data()?['referralSuccessCount'] ?? 0) as int;
-      final newCount = currentCount + 1;
-      final updates = <String, dynamic>{'referralSuccessCount': newCount};
-      if (newCount % 3 == 0) {
-        final currentQuota = (snap.data()?['dailyQuota'] ?? 0) as int;
-        updates['dailyQuota'] = currentQuota + WinatraUser.referralInviterBonus;
-      }
-      tx.update(inviterRef, updates);
-    });
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('applyReferral')
+          .call(<String, dynamic>{'inviterUid': inviterUid});
+      debugPrint('Referral applied: ${result.data}');
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('Referral gagal via Cloud Function: ${e.code} — ${e.message}');
+    } catch (e) {
+      debugPrint('Referral gagal: $e');
+    }
   }
 
   /// Cek apakah user masih dalam masa trial Premium (3 hari sejak daftar).

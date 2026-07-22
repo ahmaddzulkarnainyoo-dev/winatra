@@ -1,12 +1,18 @@
 package com.example.winatraai
 
 import android.app.*
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.PixelFormat
+import android.os.Build
+import android.widget.Toast
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import android.os.*
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -19,6 +25,9 @@ import android.widget.RemoteViews
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
+import androidx.media.app.NotificationCompat.MediaStyle
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -125,6 +134,8 @@ class FloatingNotesService : Service() {
             persistentChannelId, "Winatra", NotificationManager.IMPORTANCE_LOW
         ).apply {
             setShowBadge(false)
+            setSound(null, null)
+            vibrationPattern = null
         }
         (getSystemService(NotificationManager::class.java)).createNotificationChannel(channel)
     }
@@ -145,8 +156,37 @@ class FloatingNotesService : Service() {
         }
     }
 
+    fun updateMode(mode: String) {
+        currentMode = mode
+        // Update floating widget buttons if visible
+        if (floatingView != null) {
+            updateButtonsForMode()
+        }
+        // Update persistent notification title
+        if (!floatingMode && ::windowManager.isInitialized) {
+            showPersistentNotification()
+        }
+    }
+
     private fun showPersistentNotification() {
         try {
+            // Cek izin Android 13+ (POST_NOTIFICATIONS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    android.util.Log.w("FloatingNotesService", "POST_NOTIFICATIONS tidak diizinkan — fallback ke Toast")
+                    Toast.makeText(this, "Aktifkan notifikasi untuk Winatra di Pengaturan agar mode non-floating berfungsi.", Toast.LENGTH_LONG).show()
+                    // Tetap jalan, hanya log warning — tidak hentikan service
+                }
+            }
+
+            // Cek apakah notifikasi diizinkan secara umum
+            if (!NotificationManagerCompat.areNotificationsEnabled(this)) {
+                android.util.Log.w("FloatingNotesService", "Notifikasi tidak diizinkan — persistent notification tidak muncul")
+                Toast.makeText(this, "Aktifkan notifikasi untuk Winatra di Pengaturan agar mode non-floating berfungsi.", Toast.LENGTH_LONG).show()
+            }
+
             // Intent untuk tombol Jawab — broadcast ke receiver
             val jawabIntent = Intent("com.winatraai.JAWAB_ACTION")
             val jawabPendingIntent = PendingIntent.getBroadcast(
@@ -154,13 +194,30 @@ class FloatingNotesService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            // Intent untuk tombol Buka — buka MainActivity
+            val bukaIntent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val bukaPendingIntent = PendingIntent.getActivity(
+                this, 2, bukaIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Large icon dari launcher icon
+            val largeIcon = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+
             val notification = NotificationCompat.Builder(this, persistentChannelId)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle("Winatra — Mode Pelajar")
-                .setContentText("Tekan Jawab untuk menjawab soal dari clipboard")
+                .setSmallIcon(R.drawable.ic_notification)
+                .setLargeIcon(largeIcon)
+                .setContentTitle("Winatra AI Aktif")
+                .setContentText("Ketik & tanya langsung dari sini")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setOngoing(true)
+                .setColor(0xFF00BFFF.toInt())
+                .setStyle(MediaStyle())
                 .addAction(android.R.drawable.ic_menu_edit, "Jawab", jawabPendingIntent)
+                .addAction(android.R.drawable.ic_menu_compass, "Buka", bukaPendingIntent)
                 .build()
 
             startForeground(1001, notification)
@@ -267,26 +324,54 @@ class FloatingNotesService : Service() {
             "Soal essay: $soal\n\nJawab lengkap dan jelas."
         }
 
+        // Cek dailyQuota dari Firestore sebelum callWorker
+        val uid = getSharedPreferencesUid()
+        if (uid == null) {
+            showAnswerNotification("Gagal: user tidak terautentikasi.", showKenapaButton = false)
+            return
+        }
+
         Thread {
-            val result = callWorker(prompt)
-            val lines = result.split("\n", limit = 2)
+            try {
+                val db = FirebaseFirestore.getInstance()
+                val doc = db.collection("users").document(uid).get().await()
+                val dailyQuota = doc.getLong("dailyQuota") ?: 0
+                if (dailyQuota <= 0) {
+                    showAnswerNotification("Kuota harian habis! Reset besok, atau upgrade ke Premium.", showKenapaButton = false)
+                    return@Thread
+                }
 
-            // Tampilkan indikator tipe soal di floating widget
-            updateSoalType(isPilihanGanda)
+                val result = callWorker(prompt)
+                val lines = result.split("\n", limit = 2)
 
-            if (isPilihanGanda) {
-                lastFullAnswer = if (lines.size > 1) lines[1] else ""
-                showAnswerNotification(lines[0].trim(), showKenapaButton = true)
-            } else {
-                // Auto-copy essay ke clipboard biar tinggal paste di mana aja
-                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("jawaban_winatra", result))
-                showAnswerNotification(
-                    "✅ Sudah di-copy ke clipboard\n\n$result",
-                    showKenapaButton = false
-                )
+                // Kurangi dailyQuota setelah jawaban berhasil didapat
+                db.collection("users").document(uid).update("dailyQuota", FieldValue.increment(-1))
+
+                // Tampilkan indikator tipe soal di floating widget
+                updateSoalType(isPilihanGanda)
+
+                if (isPilihanGanda) {
+                    lastFullAnswer = if (lines.size > 1) lines[1] else ""
+                    showAnswerNotification(lines[0].trim(), showKenapaButton = true)
+                } else {
+                    // Auto-copy essay ke clipboard biar tinggal paste di mana aja
+                    val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("jawaban_winatra", result))
+                    showAnswerNotification(
+                        "✅ Sudah di-copy ke clipboard\n\n$result",
+                        showKenapaButton = false
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FloatingNotesService", "Error handleJawabClicked", e)
+                showAnswerNotification("Gagal: ${e.message}", showKenapaButton = false)
             }
         }.start()
+    }
+
+    private fun getSharedPreferencesUid(): String? {
+        val prefs = getSharedPreferences("com.winatraai.prefs", Context.MODE_PRIVATE)
+        return prefs.getString("uid", null)
     }
 
     private fun updateSoalType(isPilihanGanda: Boolean) {

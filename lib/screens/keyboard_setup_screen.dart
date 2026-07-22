@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/widgets/winatra_snackbar.dart';
 
 class KeyboardSetupScreen extends StatefulWidget {
   const KeyboardSetupScreen({super.key});
@@ -64,9 +65,7 @@ class _KeyboardSetupScreenState extends State<KeyboardSetupScreen> with WidgetsB
     } catch (e) {
       debugPrint('open keyboard settings error: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tidak bisa membuka pengaturan keyboard: $e')),
-      );
+      showWinatraSnackbar(context, message: 'Tidak bisa membuka pengaturan keyboard: $e', isError: true);
     }
   }
 

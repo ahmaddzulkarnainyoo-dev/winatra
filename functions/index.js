@@ -1,6 +1,9 @@
 const functions = require("firebase-functions");
+const admin = require("firebase-admin");
 const fetch = require("node-fetch");
 const { defineSecret } = require("firebase-functions/params");
+
+admin.initializeApp();
 
 const DEEPSEEK_API_KEY = defineSecret("DEEPSEEK_API_KEY");
 
@@ -49,3 +52,46 @@ exports.askWinatra = functions.https.onCall(
     };
   }
 );
+
+/**
+ * Server-side referral logic.
+ * Client tidak bisa menulis dokumen user lain karena Firestore rules,
+ * jadi fungsi ini pakai admin SDK (bypass rules) untuk update field
+ * 'referralSuccessCount' dan 'dailyQuota' milik inviter.
+ */
+exports.applyReferral = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Login dulu.");
+  }
+
+  const { inviterUid } = data;
+  if (!inviterUid) {
+    throw new functions.https.HttpsError("invalid-argument", "inviterUid required.");
+  }
+
+  const db = admin.firestore();
+  const inviterRef = db.collection("users").doc(inviterUid);
+
+  try {
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(inviterRef);
+      if (!snap.exists) return;
+
+      const currentCount = (snap.data()?.referralSuccessCount ?? 0);
+      const newCount = currentCount + 1;
+      const updates = { referralSuccessCount: newCount };
+
+      // Setiap 3 referral sukses, inviter dapat bonus 10 kuota
+      if (newCount % 3 === 0) {
+        const currentQuota = (snap.data()?.dailyQuota ?? 0);
+        updates.dailyQuota = currentQuota + 10; // WinatraUser.referralInviterBonus == 10
+      }
+
+      tx.update(inviterRef, updates);
+    });
+
+    return { success: true };
+  } catch (error) {
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});

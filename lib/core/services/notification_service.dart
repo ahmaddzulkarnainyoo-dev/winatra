@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:winatraai/core/services/exam_mode_service.dart';
+import 'package:winatraai/core/widgets/winatra_snackbar.dart';
 
 /// Pusat notifikasi Winatra — semua notifikasi harus lewat sini.
 /// Otomatis cek Mode Ujian: jika sedang ujian aktif, notifikasi non-esensial
@@ -25,8 +26,6 @@ class NotificationService {
       if (isExam) return; // suppress non-essential saat ujian
     }
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: duration),
-    );
+    showWinatraSnackbar(context, message: message, duration: duration);
   }
 }

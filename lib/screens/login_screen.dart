@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import '../core/services/auth_service.dart';
 import '../core/services/overlay_permission_service.dart';
+import '../core/widgets/winatra_snackbar.dart';
 import 'main_nav_screen.dart';
 import 'overlay_permission_screen.dart';
 import 'register_screen.dart';
@@ -60,31 +62,43 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? null
                   : () async {
                       setState(() => _isLoading = true);
-                      final error = await AuthService().signIn(
-                        _emailController.text,
-                        _passwordController.text,
-                      );
-                      if (mounted) setState(() => _isLoading = false);
-                      if (error == null) {
-                        if (!context.mounted) return;
-                        final hasPermission = await OverlayPermissionService.hasPermission();
-                        if (!context.mounted) return;
-                        if (hasPermission) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const MainNavScreen()),
-                          );
+                      try {
+                        final error = await AuthService()
+                            .signIn(
+                              _emailController.text,
+                              _passwordController.text,
+                            )
+                            .timeout(const Duration(seconds: 10));
+                        if (mounted) setState(() => _isLoading = false);
+                        if (error == null) {
+                          if (!context.mounted) return;
+                          final hasPermission = await OverlayPermissionService.hasPermission();
+                          if (!context.mounted) return;
+                          if (hasPermission) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MainNavScreen()),
+                            );
+                          } else {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const OverlayPermissionScreen()),
+                            );
+                          }
                         } else {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const OverlayPermissionScreen()),
-                          );
+                          if (!context.mounted) return;
+                          showWinatraSnackbar(context, message: error, isError: true);
                         }
-                      } else {
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(error)),
-                        );
+                      } on TimeoutException catch (_) {
+                        if (mounted) {
+                          setState(() => _isLoading = false);
+                          showWinatraSnackbar(context, message: 'Koneksi lambat, coba lagi.', isError: true);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          setState(() => _isLoading = false);
+                          showWinatraSnackbar(context, message: 'Gagal login: $e', isError: true);
+                        }
                       }
                     },
               child: _isLoading
