@@ -183,7 +183,7 @@ class FloatingNotesService : Service() {
             }
 
             // Cek apakah notifikasi diizinkan secara umum
-            if (!NotificationManagerCompat.areNotificationsEnabled(this)) {
+            if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
                 android.util.Log.w("FloatingNotesService", "Notifikasi tidak diizinkan — persistent notification tidak muncul")
                 Toast.makeText(this, "Aktifkan notifikasi untuk Winatra di Pengaturan agar mode non-floating berfungsi.", Toast.LENGTH_LONG).show()
             }
