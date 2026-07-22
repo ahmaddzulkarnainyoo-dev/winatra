@@ -26,6 +26,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
 import org.json.JSONObject
@@ -334,7 +335,8 @@ class FloatingNotesService : Service() {
         Thread {
             try {
                 val db = FirebaseFirestore.getInstance()
-                val doc = db.collection("users").document(uid).get().await()
+                val task = db.collection("users").document(uid).get()
+                val doc = Tasks.await(task)
                 val dailyQuota = doc.getLong("dailyQuota") ?: 0
                 if (dailyQuota <= 0) {
                     showAnswerNotification("Kuota harian habis! Reset besok, atau upgrade ke Premium.", showKenapaButton = false)

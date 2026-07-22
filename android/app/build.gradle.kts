@@ -7,6 +7,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+dependencies {
+    // Firebase BOM — mengatur versi semua Firebase library
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-firestore-ktx")
+}
+
 android {
     namespace = "com.example.winatraai"
     compileSdk = flutter.compileSdkVersion
